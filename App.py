@@ -387,8 +387,9 @@ def main():
     es = Elasticsearch(
         elasticsearch_url,
         basic_auth=(es_username, es_password),
-        verify_certs=True,
-        request_timeout=30
+        verify_certs=False,  # Temporarily disable SSL verification
+        ssl_show_warn=False,
+        request_timeout=60
     )
     
     
@@ -408,6 +409,13 @@ def main():
         
     st.title("🍹 Menu Item Search Engine")
     st.markdown("Discover non-alcoholic beverage options across restaurants!")
+
+    try:
+        result = es.get(index=Mocktail_index_name, id="chunk_0")
+        st.write("Elasticsearch Query Result:")
+        st.json(result)  # Pretty-print JSON response
+    except Exception as e:
+        st.error(f"Error retrieving data: {e}")
 
     # Sidebar controls
     with st.sidebar:
