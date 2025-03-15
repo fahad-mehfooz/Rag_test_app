@@ -32,7 +32,7 @@ es_cloud_id = st.secrets["es_cloud_id"]
 openai.api_key = open_api_key
 
 
-es = Elasticsearch(cloud_id=es_cloud_id, basic_auth=(es_username, es_password))
+es = Elasticsearch(cloud_id=es_cloud_id, basic_auth=(es_username, es_password), verify_certs=True, timeout=30)
 
 
 Mocktail_index_name = "mocktail_index"
