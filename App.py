@@ -20,7 +20,6 @@ from anthropic.types.message_create_params import MessageCreateParamsNonStreamin
 from anthropic.types.messages.batch_create_params import Request
 from tabulate import tabulate
 import polars as pl
-import 
 
 claude_api_key = st.secrets["claude_api_key"]
 open_api_key = st.secrets["open_api_key"]
