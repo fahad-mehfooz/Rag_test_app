@@ -238,7 +238,7 @@ def retrieve_chunks_hybrid(es, open_api_key, index_name, query_text, top_k=100, 
     if output:
         table_data = []
         headers = [
-            "Rank", "Item Name", "Doc ID", 
+            "Rank", "Item Name", "Description", "Doc ID", 
             "Blended Score", "Semantic Score", "BM25 Score",
             "Match Type"
         ]
@@ -247,6 +247,7 @@ def retrieve_chunks_hybrid(es, open_api_key, index_name, query_text, top_k=100, 
             table_data.append([
                 res['rank'],
                 res['item'][:30] + '...' if len(res.get('item', '')) > 30 else res.get('item', 'N/A'),
+                res["description"],
                 res["doc_id"],  # Use explicit doc_id field
                 f"{res['blended_score']:.4f}",
                 f"{res['normalized_semantic']:.4f} (orig: {res['original_semantic']:.2f})",
