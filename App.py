@@ -393,6 +393,19 @@ def main():
     
     
     Mocktail_index_name = "mocktail_index"
+
+    try:
+        if es.ping():
+            st.sidebar.success("✅ Connected to Elasticsearch")
+        else:
+            st.sidebar.error("❌ Could not connect to Elasticsearch")
+    except Exception as es_conn_error:
+        st.sidebar.error(f"Elasticsearch connection failed: {es_conn_error}")# Add index existence check
+    if es.indices.exists(index=Mocktail_index_name):
+        st.sidebar.success(f"✅ Index '{Mocktail_index_name}' exists")
+    else:
+        st.sidebar.error(f"❌ Index '{Mocktail_index_name}' not found")
+        
     st.title("🍹 Menu Item Search Engine")
     st.markdown("Discover non-alcoholic beverage options across restaurants!")
 
