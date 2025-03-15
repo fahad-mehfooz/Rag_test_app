@@ -68,6 +68,8 @@ def retrieve_chunks_hybrid(es, index_name, query_text, top_k=100, final_k=10,
     Returns:
         list: List of retrieved chunks with scores and metadata including document ID
     """
+    st.write("Starting retrieve_chunks_hybrid function")
+                                
     if not enable_hybrid:
         semantic_weight = 1.0
         bm25_weight = 0.0
@@ -77,14 +79,17 @@ def retrieve_chunks_hybrid(es, index_name, query_text, top_k=100, final_k=10,
         total = semantic_weight + bm25_weight
         semantic_weight /= total
         bm25_weight /= total
-
+        
+    st.write(f"Search weights normalized: semantic={semantic_weight:.2f}, bm25={bm25_weight:.2f}")
     try:
         query_vector = create_embeddings([query_text], open_api_key)[0]
+        st.write("Embeddings created successfully")
     except Exception as e:
+        st.error(f"Embedding creation error: {e}")
         print(f"Embedding creation error: {e}")
         return []
 
-    st.text(query_vector[0])
+    st.write(f"First 3 elements of vector: {query_vector[:3]}")
 
     semantic_hits = {}
     bm25_hits = {}
