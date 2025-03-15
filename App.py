@@ -1,8 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[25]:
-
 
 import streamlit as st
 import pandas as pd
@@ -25,14 +20,7 @@ from anthropic.types.message_create_params import MessageCreateParamsNonStreamin
 from anthropic.types.messages.batch_create_params import Request
 from tabulate import tabulate
 import polars as pl
-
-load_dotenv("Credentials.env")
-claude_api_key = os.getenv("claud_api_key")
-open_api_key = os.getenv("open_api_key")
-elasticsearch_url = os.getenv("elasticsearch_url")
-es_username = os.getenv("es_username")
-es_password = os.getenv("es_password")
-openai.api_key = open_api_key
+import 
 
 
 auth = (es_username, es_password)
@@ -426,13 +414,8 @@ def group_and_aggregate(data, groupby_cols, agg_col, agg_func="count", top_n=Non
     return grouped_df
 
 
-# In[27]:
 
 
-import streamlit as st
-import pandas as pd
-
-# ... [Include all your existing imports and initialization code here] ...
 
 def main():
     st.title("🍹 Menu Item Search Engine")
