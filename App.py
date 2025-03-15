@@ -17,6 +17,7 @@ def create_embeddings(open_api_key, text_chunks):
     
     import openai
     openai.api_key = open_api_key
+    st.write(open_api_key[:3])
 
     batch_size = 2000  
     all_embeddings = []
