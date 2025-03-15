@@ -1,20 +1,11 @@
 
 import streamlit as st
 import pandas as pd
-import os
-import glob
-import ast
-import json
-from anthropic import Anthropic
-from dotenv import load_dotenv
 import time
 import openai
-import pickle 
-import requests
 import elasticsearch
-from elasticsearch import Elasticsearch, helpers
+from elasticsearch import Elasticsearch
 import time
-import anthropic
 from tabulate import tabulate
 import polars as pl
 
