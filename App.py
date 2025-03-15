@@ -82,7 +82,7 @@ def retrieve_chunks_hybrid(es,open_api_key, index_name, query_text, top_k=100, f
         
     try:
         st.write("Creating embeddings for query: " + query_text)
-        embeddings = create_embeddings([query_text], open_api_key)
+        query_vector = create_embeddings([query_text], open_api_key)[0]
         
         # Debug what we got back
         st.write(f"Embeddings created. Got back a list of length: {len(embeddings)}")
@@ -398,9 +398,7 @@ def main():
     es_password = st.secrets["es_password"]
     es_cloud_id = st.secrets["es_cloud_id"]
     
-    
-    openai.api_key = open_api_key
-    
+        
     auth = (es_username, es_password)
     
     es = Elasticsearch(
@@ -429,7 +427,7 @@ def main():
 
     if st.button("Search"):
         with st.spinner("Searching across restaurants..."):
-            results = retrieve_chunks_hybrid(es,open_api_key,
+            results = retrieve_chunks_hybrid(es, open_api_key,
                 index_name=Mocktail_index_name,
                 query_text=query,
                 final_k=final_k,
