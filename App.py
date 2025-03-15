@@ -14,9 +14,10 @@ import polars as pl
 
 
 def create_query_embedding(open_api_key, query_text):
-    """Create embedding for a single query text"""
+    """Create embedding for a single query text using modern OpenAI client"""
     try:
         client = openai.OpenAI(api_key=open_api_key)
+        
         response = client.embeddings.create(
             model="text-embedding-3-small",
             input=[query_text],
@@ -25,9 +26,7 @@ def create_query_embedding(open_api_key, query_text):
         return response.data[0].embedding
     except Exception as e:
         st.error(f"Embedding creation failed: {str(e)}")
-        return None
-        
-    
+        return None    
 
 
 def retrieve_chunks_hybrid(es, open_api_key, index_name, query_text, top_k=100, final_k=10,
