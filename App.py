@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import time
@@ -9,34 +8,9 @@ import time
 from tabulate import tabulate
 import polars as pl
 
-
-
-
-        
-        
-
-
-
 def retrieve_chunks_hybrid(es, open_api_key, index_name, query_text, top_k=100, final_k=10,
                             semantic_weight=0.7, bm25_weight=0.3,
                             enable_hybrid=True, use_threshold=False, score_threshold=0.5):
-    """
-    Retrieve chunks using hybrid search with both semantic and keyword components.
-    
-    Args:
-        index_name (str): Name of the Elasticsearch index
-        query_text (str): User query text
-        top_k (int): Number of initial results to retrieve
-        final_k (int): Number of final results to return
-        semantic_weight (float): Weight for semantic search component (0-1)
-        bm25_weight (float): Weight for BM25 search component (0-1)
-        enable_hybrid (bool): Whether to enable hybrid search or use semantic only
-        use_threshold (bool): Whether to filter by score threshold instead of top-k
-        score_threshold (float): Minimum blended score threshold (0-1) when use_threshold=True
-        
-    Returns:
-        list: List of retrieved chunks with scores and metadata including document ID
-    """
     if not enable_hybrid:
         semantic_weight = 1.0
         bm25_weight = 0.0
@@ -400,6 +374,9 @@ def main():
             results_df = pd.DataFrame([{
                 "Item": r.get('item', 'N/A'),
                 "Restaurant": r.get('restaurant', 'N/A'),
+                "Description": (r.get('description', 'N/A') + '...') 
+                if len(r.get('description', '')) > 75 
+                else r.get('description', 'N/A'),
                 "Price": r.get('item_price', 'N/A'),
                 "Rating": r.get('rating', 'N/A'),
                 "Address": r.get('display_address', 'N/A'),
