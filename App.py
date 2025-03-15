@@ -84,6 +84,8 @@ def retrieve_chunks_hybrid(es, index_name, query_text, top_k=100, final_k=10,
         print(f"Embedding creation error: {e}")
         return []
 
+    st.text(query_vector[0])
+
     semantic_hits = {}
     bm25_hits = {}
 
