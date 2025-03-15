@@ -13,43 +13,33 @@ import polars as pl
 
 
 
-def create_embeddings(open_api_key, text_chunks):
-    
+def create_query_embedding(open_api_key, query_text):
     import openai
+    
     openai.api_key = open_api_key
-    st.write(open_api_key[:3])
-
-    batch_size = 2000  
-    all_embeddings = []
     
-    for i in range(0, len(text_chunks), batch_size):
+    try:
+        # Ensure the query is a string
+        query_text = str(query_text)
         
-        batch = text_chunks[i:i+batch_size]
-        batch = [str(text) for text in batch if text]
+        # Create embedding for the single query
+        response = openai.embeddings.create(
+            model="text-embedding-3-small",
+            input=[query_text],  # Input needs to be a list even for single query
+            encoding_format="float"
+        )
         
-        try:
-            response = openai.embeddings.create(
-                model="text-embedding-3-small",
-                input=batch,
-                encoding_format="float"
-            )
-            
-            batch_embeddings = [item.embedding for item in response.data]
-            all_embeddings.extend(batch_embeddings)
-            
-            time.sleep(0.5)
-            
-            print(f"Processed batch {i//batch_size + 1}/{(len(text_chunks)-1)//batch_size + 1}")
-            
-        except Exception as e:
-            print(f"Error in batch starting at index {i}: {e}")
+        # Extract the embedding from the response
+        query_embedding = response.data[0].embedding
+        
+        return query_embedding
+        
+    except Exception as e:
+        print(f"Error creating embedding for query: {e}")
+        return None
+
+        
     
-    return all_embeddings
-
-
-        
-        
-
 
 
 def retrieve_chunks_hybrid(es, open_api_key, index_name, query_text, top_k=100, final_k=10,
@@ -83,7 +73,7 @@ def retrieve_chunks_hybrid(es, open_api_key, index_name, query_text, top_k=100, 
         bm25_weight /= total
 
     try:
-        query_vector = create_embeddings(open_api_key, [query_text])[0]
+        query_vector = create_embeddings(open_api_key, query_text)[0]
         st.write(query_vector[0])
     except Exception as e:
         print(f"Embedding creation error: {e}")
