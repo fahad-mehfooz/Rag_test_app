@@ -7,7 +7,6 @@ import ast
 import json
 from anthropic import Anthropic
 from dotenv import load_dotenv
-import faiss
 import time
 import openai
 import pickle 
@@ -16,12 +15,9 @@ import elasticsearch
 from elasticsearch import Elasticsearch, helpers
 import time
 import anthropic
-from anthropic.types.message_create_params import MessageCreateParamsNonStreaming
-from anthropic.types.messages.batch_create_params import Request
 from tabulate import tabulate
 import polars as pl
 
-claude_api_key = st.secrets["claude_api_key"]
 open_api_key = st.secrets["open_api_key"]
 elasticsearch_url = st.secrets["elasticsearch_url"]
 es_username = st.secrets["es_username"]
@@ -31,32 +27,17 @@ es_cloud_id = st.secrets["es_cloud_id"]
 
 openai.api_key = open_api_key
 
+auth = (es_username, es_password)
 
-es = Elasticsearch(cloud_id=es_cloud_id, basic_auth=(es_username, es_password), verify_certs=True, request_timeout=30)
+es = Elasticsearch(
+    elasticsearch_url,
+    basic_auth=(es_username, es_password),
+    verify_certs=True,
+    request_timeout=30
+)
 
 
 Mocktail_index_name = "mocktail_index"
-
-
-def call_llm(prompt, system_prompt="You are Claude, a helpful AI assistant.", model="claude-3-haiku-20240307", temperature=0.4, max_tokens=1000, api_key=None):
-    if api_key is None:
-        global claud_api_key
-        api_key = claud_api_key
-        
-    client = Anthropic(api_key=api_key)
-    
-    response = client.messages.create(
-        model=model,
-        max_tokens=max_tokens,
-        temperature=temperature,
-        system=system_prompt,
-        messages=[
-            {"role": "user", "content": prompt}
-        ]
-    )
-    
-    return response.content[0].text
-
 
 
 def create_embeddings(text_chunks):
