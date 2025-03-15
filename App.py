@@ -344,7 +344,7 @@ def main():
     # Sidebar controls
     with st.sidebar:
         st.header("Search Parameters")
-        final_k = st.slider("Number of Results", 1, 100, 10)
+        final_k = st.slider("Number of Results", 1, 250, 10)
         semantic_weight = st.slider("Semantic Weight", 0.0, 1.0, 0.7)
         bm25_weight = st.slider("BM25 Weight", 0.0, 1.0, 0.3)
         use_threshold = st.checkbox("Use Score Threshold")
