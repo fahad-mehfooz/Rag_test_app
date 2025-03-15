@@ -420,7 +420,7 @@ def main():
                 score_threshold=score_threshold
             )
     
-    st.text(results)
+        st.text(results)
         if not results:
             st.warning("No results found. Try adjusting your search parameters.")
             return
