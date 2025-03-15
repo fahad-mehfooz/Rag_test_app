@@ -11,7 +11,9 @@ import polars as pl
 
 
 
-def create_embeddings(text_chunks, open_api_key):
+
+
+def create_embeddings(open_api_key, text_chunks):
     
     openai.api_key = open_api_key
 
@@ -48,7 +50,7 @@ def create_embeddings(text_chunks, open_api_key):
 
 
 
-def retrieve_chunks_hybrid(es,open_api_key, index_name, query_text, top_k=100, final_k=10,
+def retrieve_chunks_hybrid(es, open_api_key, index_name, query_text, top_k=100, final_k=10,
                             semantic_weight=0.7, bm25_weight=0.3,
                             enable_hybrid=True, use_threshold=False, score_threshold=0.5):
     """
@@ -68,8 +70,6 @@ def retrieve_chunks_hybrid(es,open_api_key, index_name, query_text, top_k=100, f
     Returns:
         list: List of retrieved chunks with scores and metadata including document ID
     """
-    st.write("Starting retrieve_chunks_hybrid function")
-                                
     if not enable_hybrid:
         semantic_weight = 1.0
         bm25_weight = 0.0
@@ -79,29 +79,12 @@ def retrieve_chunks_hybrid(es,open_api_key, index_name, query_text, top_k=100, f
         total = semantic_weight + bm25_weight
         semantic_weight /= total
         bm25_weight /= total
-        
-    try:
-        st.write("Creating embeddings for query: " + query_text)
-        query_vector = create_embeddings([query_text], open_api_key)[0]
-        
-        # Debug what we got back
-        st.write(f"Embeddings created. Got back a list of length: {len(embeddings)}")
-        
-        if len(embeddings) == 0:
-            st.error("Empty embeddings list returned from OpenAI")
-            return []
-            
-        query_vector = embeddings[0]
-        st.write(f"First few embedding values: {query_vector[:5]}")
-        
-    except Exception as e:
-        st.error(f"Embedding creation error: {e}")
-        import traceback
-        st.error(f"Traceback: {traceback.format_exc()}")
-        return []
 
-                                
-    st.write(f"First 3 elements of vector: {query_vector[:3]}")
+    try:
+        query_vector = create_embeddings(open_api_key, [query_text])[0]
+    except Exception as e:
+        print(f"Embedding creation error: {e}")
+        return []
 
     semantic_hits = {}
     bm25_hits = {}
@@ -309,7 +292,6 @@ def retrieve_chunks_hybrid(es,open_api_key, index_name, query_text, top_k=100, f
      
     
     return output
-
 
 def group_and_aggregate(data, groupby_cols, agg_col, agg_func="count", top_n=None, sort_desc=True, filter_conditions=None):
     """
