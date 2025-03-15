@@ -404,14 +404,10 @@ def main():
         use_threshold = st.checkbox("Use Score Threshold")
         score_threshold = st.slider("Score Threshold", 0.0, 1.0, 0.4) if use_threshold else None
 
-    st.text(final_k)
-    st.text(semantic_weight)
-    st.text(bm25_weight)
-    st.text(use_threshold)
-    st.text(score_threshold)
 
     # Main search interface
     query = st.text_input("Enter your beverage query:", "What are some Sodas?")
+    st.text(query)
 
     if st.button("Search"):
         with st.spinner("Searching across restaurants..."):
