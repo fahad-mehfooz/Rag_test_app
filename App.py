@@ -26,17 +26,15 @@ open_api_key = st.secrets["open_api_key"]
 elasticsearch_url = st.secrets["elasticsearch_url"]
 es_username = st.secrets["es_username"]
 es_password = st.secrets["es_password"]
+es_cloud_id = st.secrets["es_cloud_id"]
+
 
 openai.api_key = open_api_key
 
 auth = (es_username, es_password)
 
-es = Elasticsearch(
-    elasticsearch_url,
-    basic_auth=(es_username, es_password),
-    verify_certs=True,
-    timeout=30
-)
+es = Elasticsearch(cloud_id=CLOUD_ID, basic_auth=(es_username, es_password))
+
 
 Mocktail_index_name = "mocktail_index"
 
