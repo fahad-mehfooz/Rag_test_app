@@ -31,7 +31,6 @@ es_cloud_id = st.secrets["es_cloud_id"]
 
 openai.api_key = open_api_key
 
-auth = (es_username, es_password)
 
 es = Elasticsearch(cloud_id=CLOUD_ID, basic_auth=(es_username, es_password))
 
