@@ -11,22 +11,41 @@ import polars as pl
 
 
 
+def create_embeddings(open_api_key, text_chunks):
+    
+    openai.api_key = open_api_key
 
-
-def create_query_embedding(open_api_key, query_text):
-    """Create embedding for a single query text using modern OpenAI client"""
-    try:
-        client = openai.OpenAI(api_key=open_api_key)
+    batch_size = 2000  
+    all_embeddings = []
+    
+    for i in range(0, len(text_chunks), batch_size):
         
-        response = client.embeddings.create(
-            model="text-embedding-3-small",
-            input=[query_text],
-            encoding_format="float"
-        )
-        return response.data[0].embedding
-    except Exception as e:
-        st.error(f"Embedding creation failed: {str(e)}")
-        return None    
+        batch = text_chunks[i:i+batch_size]
+        batch = [str(text) for text in batch if text]
+        
+        try:
+            response = openai.embeddings.create(
+                model="text-embedding-3-small",
+                input=batch,
+                encoding_format="float"
+            )
+            
+            batch_embeddings = [item.embedding for item in response.data]
+            all_embeddings.extend(batch_embeddings)
+            
+            time.sleep(0.5)
+            
+            print(f"Processed batch {i//batch_size + 1}/{(len(text_chunks)-1)//batch_size + 1}")
+            
+        except Exception as e:
+            print(f"Error in batch starting at index {i}: {e}")
+    
+    return all_embeddings
+
+
+        
+        
+
 
 
 def retrieve_chunks_hybrid(es, open_api_key, index_name, query_text, top_k=100, final_k=10,
@@ -59,14 +78,11 @@ def retrieve_chunks_hybrid(es, open_api_key, index_name, query_text, top_k=100, 
         semantic_weight /= total
         bm25_weight /= total
 
-    st.write("🧠 Creating query embedding...")
-    query_vector = create_query_embedding(open_api_key, query_text)
-    
-    if not query_vector:
-        st.error("Failed to create query embedding")
+    try:
+        query_vector = create_embeddings(open_api_key, [query_text])[0]
+    except Exception as e:
+        print(f"Embedding creation error: {e}")
         return []
-
-    st.write(f"✅ Created embedding vector (length: {len(query_vector)})")
 
     semantic_hits = {}
     bm25_hits = {}
@@ -275,6 +291,7 @@ def retrieve_chunks_hybrid(es, open_api_key, index_name, query_text, top_k=100, 
     
     return output
 
+
 def group_and_aggregate(data, groupby_cols, agg_col, agg_func="count", top_n=None, sort_desc=True, filter_conditions=None):
     """
     Groups and aggregates a dataset with optional filtering using Polaris instead of Pandas.
@@ -386,7 +403,6 @@ def main():
         score_threshold = st.slider("Score Threshold", 0.0, 1.0, 0.4) if use_threshold else None
 
 
-    # Main search interface
     query = st.text_input("Enter your beverage query:", "What are some Sodas?")
 
     if st.button("Search"):
