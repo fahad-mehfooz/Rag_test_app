@@ -11,37 +11,6 @@ import polars as pl
 
 
 
-def create_embeddings(open_api_key, text_chunks):
-    
-    openai.api_key = open_api_key
-
-    batch_size = 2000  
-    all_embeddings = []
-    
-    for i in range(0, len(text_chunks), batch_size):
-        
-        batch = text_chunks[i:i+batch_size]
-        batch = [str(text) for text in batch if text]
-        
-        try:
-            response = openai.embeddings.create(
-                model="text-embedding-3-small",
-                input=batch,
-                encoding_format="float"
-            )
-            
-            batch_embeddings = [item.embedding for item in response.data]
-            all_embeddings.extend(batch_embeddings)
-            
-            time.sleep(0.5)
-            
-            print(f"Processed batch {i//batch_size + 1}/{(len(text_chunks)-1)//batch_size + 1}")
-            
-        except Exception as e:
-            print(f"Error in batch starting at index {i}: {e}")
-    
-    return all_embeddings
-
 
         
         
@@ -78,11 +47,14 @@ def retrieve_chunks_hybrid(es, open_api_key, index_name, query_text, top_k=100, 
         semantic_weight /= total
         bm25_weight /= total
 
-    try:
-        query_vector = create_embeddings(open_api_key, [query_text])[0]
-    except Exception as e:
-        print(f"Embedding creation error: {e}")
-        return []
+    response = openai.embeddings.create(
+            model="text-embedding-3-small",
+            input=[str(text)],  # Wrap the single text input in a list
+            encoding_format="float"
+        )
+        
+    query_vector = response.data[0].embedding
+
 
     semantic_hits = {}
     bm25_hits = {}
