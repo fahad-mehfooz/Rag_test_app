@@ -48,7 +48,7 @@ def create_embeddings(text_chunks, open_api_key):
 
 
 
-def retrieve_chunks_hybrid(es, index_name, query_text, top_k=100, final_k=10,
+def retrieve_chunks_hybrid(es,open_api_key, index_name, query_text, top_k=100, final_k=10,
                             semantic_weight=0.7, bm25_weight=0.3,
                             enable_hybrid=True, use_threshold=False, score_threshold=0.5):
     """
@@ -417,7 +417,7 @@ def main():
 
     if st.button("Search"):
         with st.spinner("Searching across restaurants..."):
-            results = retrieve_chunks_hybrid(es,
+            results = retrieve_chunks_hybrid(es,open_api_key,
                 index_name=Mocktail_index_name,
                 query_text=query,
                 final_k=final_k,
