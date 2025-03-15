@@ -80,15 +80,27 @@ def retrieve_chunks_hybrid(es,open_api_key, index_name, query_text, top_k=100, f
         semantic_weight /= total
         bm25_weight /= total
         
-    st.write(f"Search weights normalized: semantic={semantic_weight:.2f}, bm25={bm25_weight:.2f}")
     try:
-        query_vector = create_embeddings([query_text], open_api_key)[0]
-        st.write("Embeddings created successfully")
+        st.write("Creating embeddings for query: " + query_text)
+        embeddings = create_embeddings([query_text], open_api_key)
+        
+        # Debug what we got back
+        st.write(f"Embeddings created. Got back a list of length: {len(embeddings)}")
+        
+        if len(embeddings) == 0:
+            st.error("Empty embeddings list returned from OpenAI")
+            return []
+            
+        query_vector = embeddings[0]
+        st.write(f"First few embedding values: {query_vector[:5]}")
+        
     except Exception as e:
         st.error(f"Embedding creation error: {e}")
-        print(f"Embedding creation error: {e}")
+        import traceback
+        st.error(f"Traceback: {traceback.format_exc()}")
         return []
 
+                                
     st.write(f"First 3 elements of vector: {query_vector[:3]}")
 
     semantic_hits = {}
