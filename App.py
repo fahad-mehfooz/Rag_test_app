@@ -51,7 +51,7 @@ def retrieve_chunks_hybrid(es, open_api_key, index_name, query_text, top_k=100, 
                                     
     response = openai.embeddings.create(
             model="text-embedding-3-small",
-            input=[str(text)],  
+            input=[str(query_text)],  
             encoding_format="float"
         )
         
