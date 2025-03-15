@@ -22,6 +22,13 @@ from tabulate import tabulate
 import polars as pl
 import 
 
+claude_api_key = st.secrets["CLAUDE_API_KEY"]
+open_api_key = st.secrets["OPEN_API_KEY"]
+elasticsearch_url = st.secrets["ELASTICSEARCH_URL"]
+es_username = st.secrets["ES_USERNAME"]
+es_password = st.secrets["ES_PASSWORD"]
+
+openai.api_key = open_api_key
 
 auth = (es_username, es_password)
 
