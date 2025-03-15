@@ -387,35 +387,13 @@ def main():
     es = Elasticsearch(
         elasticsearch_url,
         basic_auth=(es_username, es_password),
-        verify_certs=False,  # Temporarily disable SSL verification
+        verify_certs=False, 
         ssl_show_warn=False,
         request_timeout=60
     )
     
     
     Mocktail_index_name = "mocktail_index"
-
-    try:
-        if es.ping():
-            st.sidebar.success("✅ Connected to Elasticsearch")
-        else:
-            st.sidebar.error("❌ Could not connect to Elasticsearch")
-    except Exception as es_conn_error:
-        st.sidebar.error(f"Elasticsearch connection failed: {es_conn_error}")# Add index existence check
-    if es.indices.exists(index=Mocktail_index_name):
-        st.sidebar.success(f"✅ Index '{Mocktail_index_name}' exists")
-    else:
-        st.sidebar.error(f"❌ Index '{Mocktail_index_name}' not found")
-        
-    st.title("🍹 Menu Item Search Engine")
-    st.markdown("Discover non-alcoholic beverage options across restaurants!")
-
-    try:
-        result = es.get(index=Mocktail_index_name, id="chunk_0")
-        st.write("Elasticsearch Query Result:")
-        st.text(str(result))  # Convert to string before displaying
-    except Exception as e:
-        st.error(f"Error retrieving data: {e}")
 
     # Sidebar controls
     with st.sidebar:
@@ -425,6 +403,12 @@ def main():
         bm25_weight = st.slider("BM25 Weight", 0.0, 1.0, 0.3)
         use_threshold = st.checkbox("Use Score Threshold")
         score_threshold = st.slider("Score Threshold", 0.0, 1.0, 0.4) if use_threshold else None
+
+    st.text(final_k)
+    st.text(semantic_weight)
+    st.text(bm25_weight)
+    st.text(use_threshold)
+    st.text(score_threshold)
 
     # Main search interface
     query = st.text_input("Enter your beverage query:", "What are some Sodas?")
