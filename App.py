@@ -419,6 +419,7 @@ def main():
                 use_threshold=use_threshold,
                 score_threshold=score_threshold
             )
+    
     st.text(results)
         if not results:
             st.warning("No results found. Try adjusting your search parameters.")
