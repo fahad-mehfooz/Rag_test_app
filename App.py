@@ -208,27 +208,27 @@ def retrieve_chunks_hybrid(es, open_api_key, index_name, query_text, top_k=100, 
             "id": result['id'],  # Document ID
             "doc_id": result['meta'].get('doc_id', result['id']),  
             "restaurant": source.get('Restaurant_Name'),
-            "restaurant_id": source.get('Restaurant_id'),  # Added Restaurant ID
-            "yelp_url": source.get('Yelp_URL'),  # Added Yelp URL
-            "address": source.get('Address'),  # Added Address
-            "city": source.get('City'),  # Added City
-            "zip": source.get('Zip'),  # Added Zip
-            "country": source.get('Country'),  # Added Country
-            "state": source.get('State'),  # Added State
-            "display_address": source.get('Display_Address'),  # Added Display Address
-            "image_url": source.get('Image_URL'),  # Added Image URL
-            "alias": source.get('Alias'),  # Added Alias
-            "review_count": source.get('Review_Count'),  # Added Review Count
-            "price": source.get('Price'),  # Added Price
+            "restaurant_id": source.get('Restaurant_id'),
+            "yelp_url": source.get('Yelp_URL'),
+            "address": source.get('Address'),
+            "city": source.get('City'),
+            "zip": source.get('Zip'),
+            "country": source.get('Country'),
+            "state": source.get('State'),
+            "display_address": source.get('Display_Address'),
+            "image_url": source.get('Image_URL'),
+            "alias": source.get('Alias'),
+            "review_count": source.get('Review_Count'),
+            "price": source.get('Price'),
             "cuisine": source.get('Cuisine_Type'),
             "item": source.get('Item_Name'),
-            "item_price": source.get('Item_Price'),  # Added Item Price
-            "item_category": source.get('Item_Category'),  # Added Item Category
+            "item_price": source.get('Item_Price'),
+            "item_category": source.get('Item_Category'),
             "description": source.get('Description'),
             "rating": source.get("Rating"),
             "categories": source.get("Categories"),
             "primary_match": "semantic" if weighted_semantic > weighted_bm25 else "bm25",
-            "metadata": {  # Additional metadata section
+            "metadata": {
                 "index": result['meta'].get('index'),
                 "doc_type": result['meta'].get('doc_type'),
                 "doc_id": result['meta'].get('doc_id', result['id'])
@@ -247,8 +247,8 @@ def retrieve_chunks_hybrid(es, open_api_key, index_name, query_text, top_k=100, 
             table_data.append([
                 res['rank'],
                 res['item'][:30] + '...' if len(res.get('item', '')) > 30 else res.get('item', 'N/A'),
-                res["description"],
-                res["doc_id"],  # Use explicit doc_id field
+                res["description"][:50] + '...' if len(res.get('description', '')) > 50 else res.get('description', 'N/A'),
+                res["doc_id"],
                 f"{res['blended_score']:.4f}",
                 f"{res['normalized_semantic']:.4f} (orig: {res['original_semantic']:.2f})",
                 f"{res['normalized_bm25']:.4f} (orig: {res['original_bm25']:.2f})",
@@ -262,7 +262,6 @@ def retrieve_chunks_hybrid(es, open_api_key, index_name, query_text, top_k=100, 
             print(f"\nShowing {len(output)} results with blended score >= {score_threshold}")
         else:
             print(f"\nShowing top {len(output)} of {len(sorted_results)} total matches")
-     
     
     return output
 
