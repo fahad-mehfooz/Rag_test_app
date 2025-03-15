@@ -14,30 +14,18 @@ import polars as pl
 
 
 def create_query_embedding(open_api_key, query_text):
-    import openai
-    
-    openai.api_key = open_api_key
-    
+    """Create embedding for a single query text"""
     try:
-        # Ensure the query is a string
-        query_text = str(query_text)
-        
-        # Create embedding for the single query
-        response = openai.embeddings.create(
+        client = openai.OpenAI(api_key=open_api_key)
+        response = client.embeddings.create(
             model="text-embedding-3-small",
-            input=[query_text],  # Input needs to be a list even for single query
+            input=[query_text],
             encoding_format="float"
         )
-        
-        # Extract the embedding from the response
-        query_embedding = response.data[0].embedding
-        
-        return query_embedding
-        
+        return response.data[0].embedding
     except Exception as e:
-        print(f"Error creating embedding for query: {e}")
+        st.error(f"Embedding creation failed: {str(e)}")
         return None
-
         
     
 
@@ -72,12 +60,14 @@ def retrieve_chunks_hybrid(es, open_api_key, index_name, query_text, top_k=100, 
         semantic_weight /= total
         bm25_weight /= total
 
-    try:
-        query_vector = create_embeddings(open_api_key, query_text)[0]
-        st.write(query_vector[0])
-    except Exception as e:
-        print(f"Embedding creation error: {e}")
+    st.write("🧠 Creating query embedding...")
+    query_vector = create_query_embedding(open_api_key, query_text)
+    
+    if not query_vector:
+        st.error("Failed to create query embedding")
         return []
+
+    st.write(f"✅ Created embedding vector (length: {len(query_vector)})")
 
     semantic_hits = {}
     bm25_hits = {}
