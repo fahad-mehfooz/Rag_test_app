@@ -11,7 +11,7 @@ import polars as pl
 
 
 
-def create_embeddings(text_chunks):
+def create_embeddings(text_chunks, open_api_key):
     
     openai.api_key = open_api_key
 
@@ -79,7 +79,7 @@ def retrieve_chunks_hybrid(es, index_name, query_text, top_k=100, final_k=10,
         bm25_weight /= total
 
     try:
-        query_vector = create_embeddings([query_text])[0]
+        query_vector = create_embeddings([query_text], open_api_key)[0]
     except Exception as e:
         print(f"Embedding creation error: {e}")
         return []
