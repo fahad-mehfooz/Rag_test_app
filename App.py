@@ -407,7 +407,6 @@ def main():
 
     # Main search interface
     query = st.text_input("Enter your beverage query:", "What are some Sodas?")
-    st.text(query)
 
     if st.button("Search"):
         with st.spinner("Searching across restaurants..."):
@@ -420,7 +419,7 @@ def main():
                 use_threshold=use_threshold,
                 score_threshold=score_threshold
             )
-
+    st.text(results)
         if not results:
             st.warning("No results found. Try adjusting your search parameters.")
             return
