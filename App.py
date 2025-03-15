@@ -413,7 +413,7 @@ def main():
     try:
         result = es.get(index=Mocktail_index_name, id="chunk_0")
         st.write("Elasticsearch Query Result:")
-        st.json(result)  # Pretty-print JSON response
+        st.text(str(result))  # Convert to string before displaying
     except Exception as e:
         st.error(f"Error retrieving data: {e}")
 
