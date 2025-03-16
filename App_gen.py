@@ -8,6 +8,24 @@ import time
 from tabulate import tabulate
 import os
 
+def call_llm(prompt, system_prompt="You are Claude, a helpful AI assistant.", model="claude-3-haiku-20240307", temperature=0.4, max_tokens=1000, api_key=None):
+    if api_key is None:
+        global claud_api_key
+        api_key = claud_api_key
+        
+    client = Anthropic(api_key=api_key)
+    
+    response = client.messages.create(
+        model=model,
+        max_tokens=max_tokens,
+        temperature=temperature,
+        system=system_prompt,
+        messages=[
+            {"role": "user", "content": prompt}
+        ]
+    )
+    
+    return response.content[0].text
 def retrieve_chunks_hybrid(es, open_api_key, index_name, query_text, top_k=100, final_k=10,
                             semantic_weight=0.7, bm25_weight=0.3, enable_hybrid = True):
     
