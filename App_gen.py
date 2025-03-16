@@ -418,7 +418,7 @@ def main():
     )
     
     
-    index_name = "test_index"
+    index_name = "mocktail_index"
 
 
 
