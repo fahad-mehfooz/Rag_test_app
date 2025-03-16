@@ -8,21 +8,6 @@ import time
 from tabulate import tabulate
 import os
 
-def call_llm(prompt, system_prompt="You are Claude, a helpful AI assistant.", model="claude-3-haiku-20240307", temperature=0.4, max_tokens=1000, api_key=claude_api_key):
-        
-    client = Anthropic(api_key=api_key)
-    
-    response = client.messages.create(
-        model=model,
-        max_tokens=max_tokens,
-        temperature=temperature,
-        system=system_prompt,
-        messages=[
-            {"role": "user", "content": prompt}
-        ]
-    )
-    
-    return response.content[0].text
 def retrieve_chunks_hybrid(es, open_api_key, index_name, query_text, top_k=100, final_k=10,
                             semantic_weight=0.7, bm25_weight=0.3, enable_hybrid = True):
     
@@ -321,7 +306,6 @@ def group_and_aggregate(data, groupby_cols, agg_col, agg_func="count", top_n=Non
 
 
 import json
-
 def generate_menu_item_response(query, retrieved_chunks, final_k):
 
     unique_entries = {}
@@ -395,25 +379,28 @@ def generate_menu_item_response(query, retrieved_chunks, final_k):
         "6. If information is missing or limited, acknowledge this fact honestly\n"
         "7. Do not invent or assume details that are not in the provided data"
     )
-    separator = "\n\n"
+
     prompt = (
         f"The user asked: \"{query}\"\n\n"
         "Below is information about relevant menu items at restaurants that match this query:\n\n"
-        f"{separator.join(restaurant_entries)}\n\n"
+        f"{'\n\n'.join(restaurant_entries)}\n\n"
         "Based on the information above, provide a helpful response that answers the user's query. "
         "Focus on the most relevant details, particularly the menu item itself, its price, description, "
         "and basic information about the restaurant where it's served. "
         "Format your response to be easy to read and understand."
     )
-
-    results = call_llm(
-        prompt=prompt,
-        system_prompt=system_prompt,
-        max_tokens=800,  
-        temperature=0.2 
+    response = client.messages.create(
+        model= "claude-3-haiku-20240307",
+        max_tokens= 800,
+        temperature= 0.3,
+        system=system_prompt,
+        messages=[
+            {"role": "user", "content": prompt}
+        ]
     )
     
     return results.strip()
+
 
 def main():
     open_api_key = st.secrets["open_api_key"]
