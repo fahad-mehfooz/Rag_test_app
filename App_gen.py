@@ -424,27 +424,26 @@ def generate_menu_item_response(query, retrieved_chunks):
 
 
 def main():
-    open_api_key = os.getenv("open_api_key")
-    elasticsearch_url = os.getenv("elasticsearch_url")
-    es_username = os.getenv("es_username")
-    es_password = os.getenv("es_password")
-    es_cloud_id = os.getenv("es_cloud_id")
+    open_api_key = st.secrets["open_api_key"]
+    elasticsearch_url = st.secrets["elasticsearch_url"]
+    es_username = st.secrets["es_username"]
+    es_password = st.secrets["es_password"]
+    es_cloud_id = st.secrets["es_cloud_id"]
     
         
-    
-    es_username = os.getenv("es_username")
-    es_password = os.getenv("es_password")
-    
     auth = (es_username, es_password)
     
     es = Elasticsearch(
         elasticsearch_url,
         basic_auth=(es_username, es_password),
-        verify_certs=True,
-        timeout=30
+        verify_certs=False, 
+        ssl_show_warn=False,
+        request_timeout=60
     )
     
+    
     index_name = "test_index"
+
 
 
     # Sidebar controls
