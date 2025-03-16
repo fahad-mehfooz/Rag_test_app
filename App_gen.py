@@ -7,6 +7,7 @@ from elasticsearch import Elasticsearch
 import time
 from tabulate import tabulate
 import os
+from anthropic import Anthropic
 
 def retrieve_chunks_hybrid(es, open_api_key, index_name, query_text, top_k=100, final_k=10,
                             semantic_weight=0.7, bm25_weight=0.3, enable_hybrid = True):
