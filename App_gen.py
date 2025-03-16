@@ -405,7 +405,7 @@ def generate_menu_item_response(claude_api_key, query, retrieved_chunks, final_k
         ]
     )
     
-    return results.strip()
+    return response.strip()
 
 
 def main():
@@ -456,7 +456,7 @@ def main():
                 bm25_weight=bm25_weight
             )
 
-            llm_result = (generate_menu_item_response(claude_api_key, query, results, final_k))
+            llm_result = generate_menu_item_response(claude_api_key, query, results, final_k)
     
         if not results:
             st.warning("No results found. Try adjusting your search parameters.")
