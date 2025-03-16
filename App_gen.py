@@ -9,7 +9,7 @@ from tabulate import tabulate
 import os
 
 def retrieve_chunks_hybrid(es, open_api_key, index_name, query_text, top_k=100, final_k=10,
-                            semantic_weight=0.7, bm25_weight=0.3):
+                            semantic_weight=0.7, bm25_weight=0.3, enable_hybrid = True):
     
     if semantic_weight + bm25_weight != 1.0:
         total = semantic_weight + bm25_weight
