@@ -152,8 +152,6 @@ def retrieve_chunks_hybrid(es, open_api_key, index_name, query_text, top_k=100, 
     
     output = []
     for i, result in enumerate(selected_results, 1):
-        if not use_threshold and i > final_k:
-            break
             
         source = result['source']
         norm_semantic = result['normalized_semantic']
@@ -222,10 +220,7 @@ def retrieve_chunks_hybrid(es, open_api_key, index_name, query_text, top_k=100, 
         print("\nSearch Results Table:")
         print(tabulate(table_data, headers=headers, tablefmt="grid", stralign="left"))
         
-        if use_threshold:
-            print(f"\nShowing {len(output)} results with blended score >= {score_threshold}")
-        else:
-            print(f"\nShowing top {len(output)} of {len(sorted_results)} total matches")
+        print(f"\nShowing top {len(output)} of {len(sorted_results)} total matches")
     
     return output
 
