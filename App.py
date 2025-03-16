@@ -347,7 +347,7 @@ def main():
         st.header("Search Parameters")
         final_k = st.slider("Number of Results", 1, 250, 10)
         semantic_weight = st.slider("Semantic Weight", 0.0, 1.0, 0.7)
-        bm25_weight = st.slider("BM25 Weight", 0.0, 1.0, 0.3)
+        bm25_weight = 1.0 - semantic_weight
         use_threshold = st.checkbox("Use Score Threshold")
         score_threshold = st.slider("Score Threshold", 0.0, 1.0, 0.4) if use_threshold else None
 
