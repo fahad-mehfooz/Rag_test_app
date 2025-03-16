@@ -312,31 +312,18 @@ def group_and_aggregate(data, groupby_cols, agg_col, agg_func="count", top_n=Non
 
 import json
 
-def generate_menu_item_response(query, retrieved_chunks):
-    """
-    Generates a response for a menu item query using retrieved chunks and a model.
+def generate_menu_item_response(query, retrieved_chunks, final_k):
 
-    Args:
-        query (str): The user's query about menu items.
-        retrieved_chunks (list): List of retrieved chunks containing restaurant and menu item metadata.
-
-    Returns:
-        str: The generated response based on the query and retrieved chunks.
-    """
-    # Limit and deduplicate results
-    # Use set to track unique restaurant-item combinations
     unique_entries = {}
     for chunk in retrieved_chunks:
         # Create a unique key based on restaurant ID and item name
         key = f"{chunk.get('restaurant_id', '')}-{chunk.get('item', '')}"
         # Only keep the first occurrence (presumably the most relevant)
-        if key not in unique_entries and len(unique_entries) < 3:
+        if key not in unique_entries and len(unique_entries) < final_k:
             unique_entries[key] = chunk
     
-    # Extract and format restaurant and menu item details from deduplicated chunks
     restaurant_entries = []
     for chunk in unique_entries.values():
-        # Only include fields that are actually present in the data
         entry_lines = []
         
         # Restaurant information
@@ -355,7 +342,6 @@ def generate_menu_item_response(query, retrieved_chunks):
             if value:
                 entry_lines.append(f"- **{label}**: {value}")
         
-        # Menu item details - highlighted prominently
         entry_lines.append(f"### Menu Item: {chunk.get('item', 'N/A')}")
         
         item_details = [
@@ -387,7 +373,6 @@ def generate_menu_item_response(query, retrieved_chunks):
         
         restaurant_entries.append("\n".join(entry_lines))
 
-    # Improved system prompt with clearer instructions
     system_prompt = (
         "You are a helpful restaurant concierge with expertise in menu items. Your job is to provide accurate, "
         "concise information about restaurant menu items based on the provided data. "
@@ -401,7 +386,6 @@ def generate_menu_item_response(query, retrieved_chunks):
         "7. Do not invent or assume details that are not in the provided data"
     )
 
-    # Format the prompt with a clearer structure and better context
     prompt = (
         f"The user asked: \"{query}\"\n\n"
         "Below is information about relevant menu items at restaurants that match this query:\n\n"
@@ -412,16 +396,14 @@ def generate_menu_item_response(query, retrieved_chunks):
         "Format your response to be easy to read and understand."
     )
 
-    # Prepare the payload for the model with better parameters
     results = call_llm(
         prompt=prompt,
         system_prompt=system_prompt,
-        max_tokens=800,  # Increased to allow for more detailed responses
-        temperature=0.2  # Reduced to ensure more consistent responses
+        max_tokens=800,  
+        temperature=0.2 
     )
     
     return results.strip()
-
 
 def main():
     open_api_key = st.secrets["open_api_key"]
@@ -469,7 +451,7 @@ def main():
                 bm25_weight=bm25_weight
             )
 
-            llm_result = (generate_menu_item_response(query, results))
+            llm_result = (generate_menu_item_response(query, results, final_k))
     
         if not results:
             st.warning("No results found. Try adjusting your search parameters.")
@@ -503,7 +485,8 @@ def main():
             )
 
         
-        st.text(f"Chatbot Output: \n\n{llm_result}, ")
+        st.text(f"Chatbot Output: ")
+        st.text(llm_result)
 
 
 if __name__ == "__main__":
