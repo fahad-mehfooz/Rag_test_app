@@ -309,17 +309,8 @@ def group_and_aggregate(data, groupby_cols, agg_col, agg_func="count", top_n=Non
 
 import json
 def generate_menu_item_response(claude_api_key, query, retrieved_chunks, final_k):
-
-    unique_entries = {}
-    for chunk in retrieved_chunks:
-        # Create a unique key based on restaurant ID and item name
-        key = f"{chunk.get('restaurant_id', '')}-{chunk.get('item', '')}"
-        # Only keep the first occurrence (presumably the most relevant)
-        if key not in unique_entries and len(unique_entries) < final_k:
-            unique_entries[key] = chunk
-    
     restaurant_entries = []
-    for chunk in unique_entries.values():
+    for chunk in retrieved_chunks:
         entry_lines = []
         
         # Restaurant information
@@ -456,7 +447,7 @@ def main():
                 bm25_weight=bm25_weight
             )
 
-            llm_result = generate_menu_item_response(claude_api_key, query, results, final_k)
+            llm_result = generate_menu_item_response(claude_api_key, query, results)
     
         if not results:
             st.warning("No results found. Try adjusting your search parameters.")
