@@ -306,15 +306,13 @@ def group_and_aggregate(data, groupby_cols, agg_col, agg_func="count", top_n=Non
 
 
 
-
-
 def generate_menu_item_response(claude_api_key, query, retrieved_chunks):
     restaurant_entries = []
-    for chunk in retrieved_chunks:
+    for idx, chunk in enumerate(retrieved_chunks, start=1):
         entry_lines = []
         
-        # Restaurant information
-        entry_lines.append(f"### Restaurant: {chunk.get('restaurant', 'Unknown')}")
+        # Restaurant information with numbering
+        entry_lines.append(f"### {idx}. Restaurant: {chunk.get('restaurant', 'Unknown')}")
         
         # Core restaurant details
         core_details = [
@@ -381,7 +379,8 @@ def generate_menu_item_response(claude_api_key, query, retrieved_chunks):
         "Based on the information above, provide a helpful response that answers the user's query. "
         "Focus on the most relevant details, particularly the menu item itself, its price, description, "
         "and basic information about the restaurant where it's served. "
-        "Format your response to be easy to read and understand."
+        "Format your response to be easy to read and understand. "
+        "Ensure that each restaurant is numbered in the order they appear, like 1. Restaurant A, 2. Restaurant B, etc."
     )
     
     client = anthropic.Anthropic(api_key=claude_api_key)
@@ -397,7 +396,6 @@ def generate_menu_item_response(claude_api_key, query, retrieved_chunks):
     )
     
     return response.content[0].text
-
 
 def main():
     open_api_key = st.secrets["open_api_key"]
