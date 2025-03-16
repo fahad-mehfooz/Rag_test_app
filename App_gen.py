@@ -380,10 +380,11 @@ def generate_menu_item_response(query, retrieved_chunks, final_k):
         "7. Do not invent or assume details that are not in the provided data"
     )
 
+    separator = "\n\n"
     prompt = (
         f"The user asked: \"{query}\"\n\n"
         "Below is information about relevant menu items at restaurants that match this query:\n\n"
-        f"{'\n\n'.join(restaurant_entries)}\n\n"
+        f"{separator.join(restaurant_entries)}\n\n"
         "Based on the information above, provide a helpful response that answers the user's query. "
         "Focus on the most relevant details, particularly the menu item itself, its price, description, "
         "and basic information about the restaurant where it's served. "
