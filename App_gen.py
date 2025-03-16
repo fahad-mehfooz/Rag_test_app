@@ -6,15 +6,10 @@ import elasticsearch
 from elasticsearch import Elasticsearch
 import time
 from tabulate import tabulate
-import polars as pl
+import os
 
 def retrieve_chunks_hybrid(es, open_api_key, index_name, query_text, top_k=100, final_k=10,
-                            semantic_weight=0.7, bm25_weight=0.3,
-                            enable_hybrid=True, use_threshold=False, score_threshold=0.5):
-    if not enable_hybrid:
-        semantic_weight = 1.0
-        bm25_weight = 0.0
-        print("Hybrid search disabled. Using semantic search only.")
+                            semantic_weight=0.7, bm25_weight=0.3):
     
     if semantic_weight + bm25_weight != 1.0:
         total = semantic_weight + bm25_weight
@@ -153,12 +148,7 @@ def retrieve_chunks_hybrid(es, open_api_key, index_name, query_text, top_k=100, 
 
     sorted_results = sorted(combined_results, key=lambda x: x['blended_score'], reverse=True)
     
-    if use_threshold:
-        filtered_results = [result for result in sorted_results if result['blended_score'] >= score_threshold]
-        print(f"Threshold filtering: Found {len(filtered_results)} results with blended score >= {score_threshold}")
-        selected_results = filtered_results
-    else:
-        selected_results = sorted_results[:final_k]
+    selected_results = sorted_results[:final_k]
     
     output = []
     for i, result in enumerate(selected_results, 1):
@@ -320,24 +310,139 @@ def group_and_aggregate(data, groupby_cols, agg_col, agg_func="count", top_n=Non
 
 
 
+import json
+
+def generate_menu_item_response(query, retrieved_chunks):
+    """
+    Generates a response for a menu item query using retrieved chunks and a model.
+
+    Args:
+        query (str): The user's query about menu items.
+        retrieved_chunks (list): List of retrieved chunks containing restaurant and menu item metadata.
+
+    Returns:
+        str: The generated response based on the query and retrieved chunks.
+    """
+    # Limit and deduplicate results
+    # Use set to track unique restaurant-item combinations
+    unique_entries = {}
+    for chunk in retrieved_chunks:
+        # Create a unique key based on restaurant ID and item name
+        key = f"{chunk.get('restaurant_id', '')}-{chunk.get('item', '')}"
+        # Only keep the first occurrence (presumably the most relevant)
+        if key not in unique_entries and len(unique_entries) < 3:
+            unique_entries[key] = chunk
+    
+    # Extract and format restaurant and menu item details from deduplicated chunks
+    restaurant_entries = []
+    for chunk in unique_entries.values():
+        # Only include fields that are actually present in the data
+        entry_lines = []
+        
+        # Restaurant information
+        entry_lines.append(f"### Restaurant: {chunk.get('restaurant', 'Unknown')}")
+        
+        # Core restaurant details
+        core_details = [
+            ("Restaurant ID", chunk.get('restaurant_id')),
+            ("Address", chunk.get('display_address')),
+            ("City", chunk.get('city')),
+            ("State", chunk.get('state', '').upper() if chunk.get('state') else None),
+            ("Rating", f"{chunk.get('rating')}/5" if chunk.get('rating') else None)
+        ]
+        
+        for label, value in core_details:
+            if value:
+                entry_lines.append(f"- **{label}**: {value}")
+        
+        # Menu item details - highlighted prominently
+        entry_lines.append(f"### Menu Item: {chunk.get('item', 'N/A')}")
+        
+        item_details = [
+            ("Item Category", chunk.get('item_category')),
+            ("Item Price", chunk.get('item_price', 'Not available')),
+            ("Description", chunk.get('description'))
+        ]
+        
+        for label, value in item_details:
+            if value:
+                entry_lines.append(f"- **{label}**: {value}")
+        
+        # Additional restaurant details
+        additional_details = [
+            ("ZIP Code", chunk.get('zip')),
+            ("Country", chunk.get('country')),
+            ("Yelp URL", chunk.get('yelp_url')),
+            ("Image URL", chunk.get('image_url')),
+            ("Alias", chunk.get('alias')),
+            ("Review Count", chunk.get('review_count')),
+            ("Price Range", chunk.get('price')),
+            ("Cuisine", chunk.get('cuisine')),
+            ("Categories", chunk.get('categories'))
+        ]
+        
+        for label, value in additional_details:
+            if value:
+                entry_lines.append(f"- **{label}**: {value}")
+        
+        restaurant_entries.append("\n".join(entry_lines))
+
+    # Improved system prompt with clearer instructions
+    system_prompt = (
+        "You are a helpful restaurant concierge with expertise in menu items. Your job is to provide accurate, "
+        "concise information about restaurant menu items based on the provided data. "
+        "Follow these guidelines:\n"
+        "1. Answer directly based ONLY on the provided restaurant and menu item information\n"
+        "2. Highlight the most relevant details that match the user's query\n"
+        "3. Organize information in a user-friendly, scannable format\n"
+        "4. Include prices, descriptions, and restaurant location details when available\n"
+        "5. Do not mention the technical aspects of how the information was retrieved\n"
+        "6. If information is missing or limited, acknowledge this fact honestly\n"
+        "7. Do not invent or assume details that are not in the provided data"
+    )
+
+    # Format the prompt with a clearer structure and better context
+    prompt = (
+        f"The user asked: \"{query}\"\n\n"
+        "Below is information about relevant menu items at restaurants that match this query:\n\n"
+        f"{'\n\n'.join(restaurant_entries)}\n\n"
+        "Based on the information above, provide a helpful response that answers the user's query. "
+        "Focus on the most relevant details, particularly the menu item itself, its price, description, "
+        "and basic information about the restaurant where it's served. "
+        "Format your response to be easy to read and understand."
+    )
+
+    # Prepare the payload for the model with better parameters
+    results = call_llm(
+        prompt=prompt,
+        system_prompt=system_prompt,
+        max_tokens=800,  # Increased to allow for more detailed responses
+        temperature=0.2  # Reduced to ensure more consistent responses
+    )
+    
+    return results.strip()
+
+
 def main():
-    open_api_key = st.secrets["open_api_key"]
-    elasticsearch_url = st.secrets["elasticsearch_url"]
-    es_username = st.secrets["es_username"]
-    es_password = st.secrets["es_password"]
-    es_cloud_id = st.secrets["es_cloud_id"]
+    open_api_key = os.getenv("open_api_key")
+    elasticsearch_url = os.getenv("elasticsearch_url")
+    es_username = os.getenv("es_username")
+    es_password = os.getenv("es_password")
+    es_cloud_id = os.getenv("es_cloud_id")
     
         
+    
+    es_username = os.getenv("es_username")
+    es_password = os.getenv("es_password")
+    
     auth = (es_username, es_password)
     
     es = Elasticsearch(
         elasticsearch_url,
         basic_auth=(es_username, es_password),
-        verify_certs=False, 
-        ssl_show_warn=False,
-        request_timeout=60
+        verify_certs=True,
+        timeout=30
     )
-    
     
     index_name = "test_index"
 
@@ -348,8 +453,6 @@ def main():
         final_k = st.slider("Number of Results", 1, 250, 10)
         semantic_weight = st.slider("Semantic Weight", 0.0, 1.0, 0.7)
         bm25_weight = 1.0 - semantic_weight
-        use_threshold = st.checkbox("Use Score Threshold")
-        score_threshold = st.slider("Score Threshold", 0.0, 1.0, 0.4) if use_threshold else None
 
     st.text(f"Semantic Weight: {semantic_weight:.2f}, BM25 Weight: {bm25_weight:.2f} ")
     
@@ -364,10 +467,10 @@ def main():
                 query_text=query,
                 final_k=final_k,
                 semantic_weight=semantic_weight,
-                bm25_weight=bm25_weight,
-                use_threshold=use_threshold,
-                score_threshold=score_threshold
+                bm25_weight=bm25_weight
             )
+
+            llm_result = (generate_menu_item_response(query, results))
     
         if not results:
             st.warning("No results found. Try adjusting your search parameters.")
@@ -400,8 +503,9 @@ def main():
                 }
             )
 
+        
+        st.text(f"Chatbot Output: \n\n{llm_result}, ")
+
+
 if __name__ == "__main__":
     main()
-
-
-
