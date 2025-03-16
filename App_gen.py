@@ -405,7 +405,7 @@ def generate_menu_item_response(claude_api_key, query, retrieved_chunks, final_k
         ]
     )
     
-    return response.strip()
+    return response.content[0].text
 
 
 def main():
