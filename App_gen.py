@@ -314,7 +314,6 @@ def generate_menu_item_response(claude_api_key, query, retrieved_chunks):
         # Restaurant information with numbering
         entry_lines.append(f"### {idx}. Restaurant: {chunk.get('restaurant', 'Unknown')}")
         
-        # Core restaurant details
         core_details = [
             ("Restaurant ID", chunk.get('restaurant_id')),
             ("Address", chunk.get('display_address')),
@@ -339,7 +338,6 @@ def generate_menu_item_response(claude_api_key, query, retrieved_chunks):
             if value:
                 entry_lines.append(f"- **{label}**: {value}")
         
-        # Additional restaurant details
         additional_details = [
             ("ZIP Code", chunk.get('zip')),
             ("Country", chunk.get('country')),
