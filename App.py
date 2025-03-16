@@ -354,8 +354,6 @@ def main():
     st.text(f"Semantic Weight: {semantic_weight:.2f}")
     st.text(f"BM25 Weight: {bm25_weight:.2f}")
     
-    use_threshold = st.checkbox("Use Score Threshold")
-    score_threshold = st.slider("Score Threshold", 0.0, 1.0, 0.4) if use_threshold else None
 
 
     query = st.text_input("Enter your beverage query:", "What are some Sodas?")
