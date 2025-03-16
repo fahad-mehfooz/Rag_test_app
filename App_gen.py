@@ -390,6 +390,9 @@ def generate_menu_item_response(query, retrieved_chunks, final_k):
         "and basic information about the restaurant where it's served. "
         "Format your response to be easy to read and understand."
     )
+    
+  client = anthropic.Anthropic(api_key=claude_api_key)
+
     response = client.messages.create(
         model= "claude-3-haiku-20240307",
         max_tokens= 800,
