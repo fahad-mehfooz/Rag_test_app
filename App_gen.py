@@ -424,6 +424,8 @@ def main():
     es_username = st.secrets["es_username"]
     es_password = st.secrets["es_password"]
     es_cloud_id = st.secrets["es_cloud_id"]
+    claude_api_key = st.secrets["claude_api_key"]
+
     
         
     auth = (es_username, es_password)
