@@ -369,7 +369,7 @@ def generate_menu_item_response(claude_api_key, query, retrieved_chunks):
         "5. Do not mention the technical aspects of how the information was retrieved\n"
         "6. If information is missing or limited, acknowledge this fact honestly\n"
         "7. Do not invent or assume details that are not in the provided data"
-        "8. IMPORTANT: If you feel some menu item does not fit the query, feel free to OMIT it.
+        "8. IMPORTANT: If you feel some menu item does not fit the query, feel free to OMIT it."
     
     )
 
