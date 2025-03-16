@@ -308,7 +308,7 @@ def group_and_aggregate(data, groupby_cols, agg_col, agg_func="count", top_n=Non
 
 
 import json
-def generate_menu_item_response(query, retrieved_chunks, final_k):
+def generate_menu_item_response(claude_api_key, query, retrieved_chunks, final_k):
 
     unique_entries = {}
     for chunk in retrieved_chunks:
@@ -456,7 +456,7 @@ def main():
                 bm25_weight=bm25_weight
             )
 
-            llm_result = (generate_menu_item_response(query, results, final_k))
+            llm_result = (generate_menu_item_response(claude_api_key, query, results, final_k))
     
         if not results:
             st.warning("No results found. Try adjusting your search parameters.")
