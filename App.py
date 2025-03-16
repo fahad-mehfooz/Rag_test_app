@@ -339,7 +339,8 @@ def main():
     )
     
     
-    Mocktail_index_name = "mocktail_index"
+    index_name = "test_index"
+
 
     # Sidebar controls
     with st.sidebar:
@@ -356,7 +357,7 @@ def main():
     if st.button("Search"):
         with st.spinner("Searching across restaurants..."):
             results = retrieve_chunks_hybrid(es, open_api_key,
-                index_name=Mocktail_index_name,
+                index_name=index_name,
                 query_text=query,
                 final_k=final_k,
                 semantic_weight=semantic_weight,
