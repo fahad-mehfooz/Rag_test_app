@@ -8,10 +8,7 @@ import time
 from tabulate import tabulate
 import os
 
-def call_llm(prompt, system_prompt="You are Claude, a helpful AI assistant.", model="claude-3-haiku-20240307", temperature=0.4, max_tokens=1000, api_key=None):
-    if api_key is None:
-        global claude_api_key
-        api_key = claude_api_key
+def call_llm(prompt, system_prompt="You are Claude, a helpful AI assistant.", model="claude-3-haiku-20240307", temperature=0.4, max_tokens=1000, api_key=claude_api_key):
         
     client = Anthropic(api_key=api_key)
     
