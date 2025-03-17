@@ -546,9 +546,8 @@ def main():
                 score_threshold=0.3
             )
 
-                # Display LLM-generated response
-                st.text("Chatbot Output:")
-                st.write(llm_result)
+            st.text("Chatbot Output:")
+            st.write(llm_result)
 
 
 if __name__ == "__main__":
