@@ -341,6 +341,7 @@ def identify_aggregation_and_generate_pandas_query(claude_api_key, query):
     - Time-based grouping: "monthly", "yearly", "quarterly"
     - Also sort the groupby results in descending order if fastest, most popular or something similar is asked
     - IMPORTANT: Grouping columns can be more than 1.
+    - "Some" is not aggregation query.
     
     Respond with a properly formatted Python dictionary literal that can be processed with ast.literal_eval().
     Do not use JSON formatting with newlines or escaped quotes.
