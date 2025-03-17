@@ -389,7 +389,6 @@ def identify_aggregation_and_generate_pandas_query(claude_api_key, query):
         return f"Error processing response: {str(e)}"
 
 
-import anthropic  # Assuming you're using Anthropic's Claude LLM
 
 def generate_aggregation_response(claude_api_key, query, df):
     """
@@ -451,6 +450,45 @@ def generate_aggregation_response(claude_api_key, query, df):
     return response.content[0].text
 
 
+
+def agentic_flow(claude_api_key, open_api_key, query, index_name, top_k, final_k, semantic_weight, bm25_weight, enable_hybrid, use_threshold=False, score_threshold=0.4):
+    x = identify_aggregation_and_generate_pandas_query(claude_api_key, query)
+    x = ast.literal_eval(x)
+    
+    if x["requires_aggregation"] is False:
+        
+        
+        results = retrieve_chunks_hybrid(es, open_api_key,
+                index_name=index_name,
+                query_text=query,
+                final_k=final_k,
+                semantic_weight=semantic_weight,
+                bm25_weight=bm25_weight
+            )
+        
+        return generate_menu_item_response(claude_api_key, query, results)
+    
+    else:
+        print("AGG")
+        results = retrieve_chunks_hybrid(es, open_api_key,
+                index_name=index_name,
+                query_text=query,
+                final_k=final_k,
+                semantic_weight=semantic_weight,
+                bm25_weight=bm25_weight
+            )
+        df = pd.DataFrame(results)
+        df.columns = [col.lower() for col in df.columns]
+        for col in df.columns:
+            try:
+                df[col] = df[col].apply(lambda x: x.lower() if isinstance(x, str) else x)
+            except:
+                continue
+        print(x["pandas_query"])
+        df = (eval(x["pandas_query"]))
+        return generate_aggregation_response(claude_api_key, query, df )
+
+
 def main():
     open_api_key = st.secrets["open_api_key"]
     elasticsearch_url = st.secrets["elasticsearch_url"]
@@ -490,16 +528,11 @@ def main():
     query = st.text_input("Enter your beverage query:", "What are some Sodas?")
 
     if st.button("Search"):
-        with st.spinner("Searching across restaurants..."):
-            results = retrieve_chunks_hybrid(es, open_api_key,
-                index_name=index_name,
-                query_text=query,
-                final_k=final_k,
-                semantic_weight=semantic_weight,
-                bm25_weight=bm25_weight
-            )
+        
+      with st.spinner("Searching across restaurants..."):
+            
+          llm_result = agentic_flow(claude_api_key, open_api_key, query, index_name, 100, 10, semantic_weight, bm25_weight, True, True, 0.3)
 
-            llm_result = generate_menu_item_response(claude_api_key, query, results)
     
         if not results:
             st.warning("No results found. Try adjusting your search parameters.")
