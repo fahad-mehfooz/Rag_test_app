@@ -608,7 +608,7 @@ def main():
                 bm25_weight=bm25_weight,
                 enable_hybrid=True,
                 use_threshold=True,
-                score_threshold=0.3
+                score_threshold=0.2
             )
 
             st.text("Chatbot Output:")
