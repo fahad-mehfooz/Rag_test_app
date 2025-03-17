@@ -546,38 +546,6 @@ def main():
                 score_threshold=0.3
             )
 
-
-            # Display results
-            if not llm_result:
-                st.warning("No results found. Try adjusting your search parameters.")
-            else:
-                # Display results in an expandable section
-                with st.expander(f"📊 See {len(results)} Search Results", expanded=True):
-                    results_df = pd.DataFrame([{
-                        "Item": r.get('item', 'N/A'),
-                        "Restaurant": r.get('restaurant', 'N/A'),
-                        "Description": (r.get('description', 'N/A')[:75] + '...') 
-                        if len(r.get('description', '')) > 75 
-                        else r.get('description', 'N/A'),
-                        "Price": r.get('item_price', 'N/A'),
-                        "Rating": r.get('rating', 'N/A'),
-                        "Address": r.get('display_address', 'N/A'),
-                        "Score": f"{r['blended_score']:.2f}",
-                        "Match Type": r['primary_match']
-                    } for r in results])
-
-                    st.dataframe(
-                        results_df,
-                        use_container_width=True,
-                        column_config={
-                            "Score": st.column_config.ProgressColumn(
-                                format="%.2f",
-                                min_value=0,
-                                max_value=1.0
-                            )
-                        }
-                    )
-
                 # Display LLM-generated response
                 st.text("Chatbot Output:")
                 st.write(llm_result)
