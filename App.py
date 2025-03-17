@@ -10,6 +10,14 @@ import os
 from anthropic import Anthropic
 import anthropic
 import json
+import ast
+import pandas as pd
+import streamlit as st
+from elasticsearch import Elasticsearch
+from anthropic import Anthropic
+import anthropic
+
+
 
 def retrieve_chunks_hybrid(es, open_api_key, index_name, query_text, top_k=100, final_k=10,
                             semantic_weight=0.7, bm25_weight=0.3, enable_hybrid = True):
@@ -371,7 +379,7 @@ def identify_aggregation_and_generate_pandas_query(claude_api_key, query):
     client = anthropic.Anthropic(api_key=claude_api_key)
     
     message = client.messages.create(
-        model="claude-3-7-sonnet-20250219",
+        model= "claude-3-haiku-20240307",
         max_tokens=1024,
         temperature=0.2,
         system=system_prompt,
@@ -499,7 +507,6 @@ def agentic_flow(es, claude_api_key, open_api_key, query, index_name, top_k, fin
         return generate_menu_item_response(claude_api_key, query, results)
     
     else:
-        print("AGG")
         results = retrieve_chunks_hybrid(es, open_api_key,
                 index_name=index_name,
                 query_text=query,
@@ -548,15 +555,6 @@ def agentic_flow(es, claude_api_key, open_api_key, query, index_name, top_k, fin
         df = (eval(x["pandas_query"]))
         return generate_aggregation_response(claude_api_key, query, df )
 
-import ast
-import pandas as pd
-import streamlit as st
-from elasticsearch import Elasticsearch
-from anthropic import Anthropic
-import anthropic
-
-# Include all your functions here: retrieve_chunks_hybrid, generate_menu_item_response, 
-# identify_aggregation_and_generate_pandas_query, generate_aggregation_response, agentic_flow
 
 def main():
     open_api_key = st.secrets["open_api_key"]
