@@ -236,8 +236,6 @@ def retrieve_chunks_hybrid(es, open_api_key, index_name, query_text, top_k=100, 
     return output
 
 
-
-
 def generate_menu_item_response(claude_api_key, query, retrieved_chunks):
     restaurant_entries = []
     for idx, chunk in enumerate(retrieved_chunks, start=1):
@@ -592,8 +590,7 @@ def main():
         bm25_weight = 1.0 - semantic_weight
 
     st.text(f"Semantic Weight: {semantic_weight:.2f}, BM25 Weight: {bm25_weight:.2f}")
-
-    # User input
+    st.text(f"Score Threshold: 0.3")
     query = st.text_input("Enter your beverage query:", "What are some Sodas?")
 
     if st.button("Search"):
