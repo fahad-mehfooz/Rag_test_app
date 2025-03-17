@@ -465,6 +465,36 @@ def agentic_flow(es, claude_api_key, open_api_key, query, index_name, top_k, fin
                 semantic_weight=semantic_weight,
                 bm25_weight=bm25_weight
             )
+        if not results:
+            st.warning("No results found. Try adjusting your search parameters.")
+            return
+
+        with st.expander(f"📊 See {len(results)} Search Results", expanded=True):
+            results_df = pd.DataFrame([{
+                "Item": r.get('item', 'N/A'),
+                "Restaurant": r.get('restaurant', 'N/A'),
+                "Description": (r.get('description', 'N/A') + '...') 
+                if len(r.get('description', '')) > 75 
+                else r.get('description', 'N/A'),
+                "Price": r.get('item_price', 'N/A'),
+                "Rating": r.get('rating', 'N/A'),
+                "Address": r.get('display_address', 'N/A'),
+                "Score": f"{r['blended_score']:.2f}",
+                "Match Type": r['primary_match']
+            } for r in results])
+            
+            st.dataframe(
+                results_df,
+                use_container_width=True,
+                column_config={
+                    "Score": st.column_config.ProgressColumn(
+                        format="%.2f",
+                        min_value=0,
+                        max_value=1.0
+                    )
+                }
+            )
+      
         
         return generate_menu_item_response(claude_api_key, query, results)
     
@@ -477,6 +507,36 @@ def agentic_flow(es, claude_api_key, open_api_key, query, index_name, top_k, fin
                 semantic_weight=semantic_weight,
                 bm25_weight=bm25_weight
             )
+        if not results:
+            st.warning("No results found. Try adjusting your search parameters.")
+            return
+
+        with st.expander(f"📊 See {len(results)} Search Results", expanded=True):
+            results_df = pd.DataFrame([{
+                "Item": r.get('item', 'N/A'),
+                "Restaurant": r.get('restaurant', 'N/A'),
+                "Description": (r.get('description', 'N/A') + '...') 
+                if len(r.get('description', '')) > 75 
+                else r.get('description', 'N/A'),
+                "Price": r.get('item_price', 'N/A'),
+                "Rating": r.get('rating', 'N/A'),
+                "Address": r.get('display_address', 'N/A'),
+                "Score": f"{r['blended_score']:.2f}",
+                "Match Type": r['primary_match']
+            } for r in results])
+            
+            st.dataframe(
+                results_df,
+                use_container_width=True,
+                column_config={
+                    "Score": st.column_config.ProgressColumn(
+                        format="%.2f",
+                        min_value=0,
+                        max_value=1.0
+                    )
+                }
+            )
+      
         df = pd.DataFrame(results)
         df.columns = [col.lower() for col in df.columns]
         for col in df.columns:
