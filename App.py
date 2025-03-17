@@ -328,63 +328,51 @@ def generate_menu_item_response(claude_api_key, query, retrieved_chunks):
     return response.content[0].text
 
 def identify_aggregation_and_generate_pandas_query(claude_api_key, query):
-    
     system_prompt = """
-    You are a specialized SQL and pandas analyzer focusing on identifying aggregation requirements in natural language queries.
-    
-    Your task is to determine whether a given query needs aggregation operations and to generate the appropriate pandas query.
-    
-    Parse the query carefully for indicators like:
-    - Fastest growing, slowest growing, top, least, popular
-    - Words suggesting grouping: "by", "per", "for each", "grouped by"
-    - Aggregation keywords: "total", "average", "count", "sum", "minimum", "maximum"
-    - Time-based grouping: "monthly", "yearly", "quarterly"
-    - Also sort the groupby results in descending order if fastest, most popular or something similar is asked
-    - IMPORTANT: Grouping columns can be more than 1.
-    
-    Respond with a properly formatted Python dictionary literal that can be processed with ast.literal_eval().
-    Do not use JSON formatting with newlines or escaped quotes.
-    
-    IMPORTANT: When requires_aggregation is False, the pandas_query MUST be an empty string.
+You are a pandas query generator. Your task is to analyze a natural language query and determine if it requires aggregation. If it does, generate the appropriate pandas query.
 
-    Example of Aggregation queries:
-    1. What are the fastest growing ...
-    2. What are popular breakfast items ....
-    3. Show me top 10...
+### Rules:
+1. **Aggregation Indicators**:
+   - Look for keywords like: "total", "average", "count", "sum", "minimum", "maximum", "top", "least", "popular", "fastest", "slowest".
+   - Look for grouping phrases like: "by", "per", "for each", "grouped by".
+   - Look for time-based grouping: "monthly", "yearly", "quarterly".
 
-    Example of Non-Aggregation queries:
-    1. What are some menu ...
-    2. Give me retail analyis
-    """
-    categorical_columns = [
-        "Quarter", "Year", "restaurant_id", "restaurant", "categories", 
-        "city", "zip", "country", "state", "price", "cuisine", 
-        "item_id", "item_category", "item"
-    ]
-    
-    continuous_columns = [
-        "rating", "review_count", "item_price"
-    ]
-    all_columns = categorical_columns + continuous_columns
-    
+2. **Aggregation Queries**:
+   - If aggregation is needed, return a dictionary with:
+     - `requires_aggregation`: True
+     - `group_by_columns`: List of columns to group by.
+     - `aggregate_columns`: List of columns to aggregate.
+     - `aggregate_functions`: List of functions (e.g., "count", "sum", "mean").
+     - `pandas_query`: The pandas query string (e.g., `df.groupby(...).agg(...).reset_index()`).
+   - Sort results in descending order if the query asks for "fastest", "most popular", etc.
+
+3. **Non-Aggregation Queries**:
+   - If no aggregation is needed, return:
+     - `requires_aggregation`: False
+     - `pandas_query`: An empty string ("").
+
+4. **Columns**:
+   - Categorical columns: ["Quarter", "Year", "restaurant_id", "restaurant", "categories", "city", "zip", "country", "state", "price", "cuisine", "item_id", "item_category", "item"].
+   - Continuous columns: ["rating", "review_count", "item_price"].
+
+5. **Output Format**:
+   - Return a Python dictionary literal that can be evaluated with `ast.literal_eval()`.
+   - Use single quotes for the dictionary and double quotes for the pandas query string.
+
+### Examples:
+1. Aggregation Query:
+   - Input: "What are the top 10 most popular items?"
+   - Output: {'requires_aggregation': True, 'group_by_columns': ['item'], 'aggregate_columns': ['item_id'], 'aggregate_functions': ['count'], 'pandas_query': "df.groupby(['item'])['item_id'].agg(['count']).reset_index().sort_values('count', ascending=False).head(10)"}
+
+2. Non-Aggregation Query:
+   - Input: "Show me gluten-free pizzas."
+   - Output: {'requires_aggregation': False, 'pandas_query': ""}
+"""
+
     prompt = (
-        "You are a SQL and pandas specialist. You need to identify if a natural language query requires aggregation "
-        "and generate the appropriate pandas query.\n\n"
-        f"Available columns in the dataset:\n"
-        f"Categorical columns: {categorical_columns}\n"
-        f"Continuous columns: {continuous_columns}\n\n"
-        "Return your response as a Python dictionary literal that can be evaluated with ast.literal_eval().\n"
-        "Use the following format for aggregation queries:\n"
-        "{'requires_aggregation': True, 'group_by_columns': ['col1', 'col2'], "
-        "'aggregate_columns': ['col3'], 'aggregate_functions': ['count', 'sum', 'mean', 'min', 'max'], "
-        "'pandas_query': \"df.groupby(['col1', 'col2'])['col3'].agg(['count', 'sum']).reset_index()\"}\n\n"
-        "For non-aggregation queries:\n"
-        "You also need to SORT results if needed"
-        "{'requires_aggregation': False, 'pandas_query': ''}\n\n"
-        "IMPORTANT: When requires_aggregation is False, the pandas_query MUST be an empty string.\n\n"
-        "Make sure all quotes are properly escaped for ast.literal_eval() - use single quotes for the outer dictionary "
-        "and double quotes for the pandas code strings when needed.\n\n"
-        f"Query to analyze: {query}\n"
+        f"Analyze the following query and generate the appropriate pandas query:\n\n"
+        f"Query: {query}\n\n"
+        f"Return your response as a Python dictionary literal."
     )
     client = anthropic.Anthropic(api_key=claude_api_key)
     
