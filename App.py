@@ -528,9 +528,7 @@ def main():
     query = st.text_input("Enter your beverage query:", "What are some Sodas?")
 
     if st.button("Search"):
-        
       with st.spinner("Searching across restaurants..."):
-            
           llm_result = agentic_flow(claude_api_key, open_api_key, query, index_name, 100, 10, semantic_weight, bm25_weight, True, True, 0.3)
 
     
