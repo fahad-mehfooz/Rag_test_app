@@ -330,6 +330,8 @@ def generate_menu_item_response(claude_api_key, query, retrieved_chunks):
 def identify_aggregation_and_generate_pandas_query(claude_api_key, query):
     system_prompt = """
 You are a pandas query generator. Your task is to analyze a natural language query and determine if it requires aggregation. If it does, generate the appropriate pandas query.
+Important:
+- All values stored in tables are in lowercase.
 
 ### Rules:
 1. **Aggregation Indicators**:
