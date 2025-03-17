@@ -552,7 +552,9 @@ def agentic_flow(es, claude_api_key, open_api_key, query, index_name, top_k, fin
             except:
                 continue
           
-        print(x["pandas_query"])
+        st.text("Pandas Query for aggregation:")
+        st.write(x["pandas_query"])
+
         try:
             df = (eval(x["pandas_query"]))
 
