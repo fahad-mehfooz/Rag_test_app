@@ -557,7 +557,7 @@ def agentic_flow(es, claude_api_key, open_api_key, query, index_name, top_k, fin
 
         try:
             df = (eval(x["pandas_query"]))
-
+            st.write(df)
         except:
             print("Error in aggregation")
         return generate_aggregation_response(claude_api_key, query, df )
