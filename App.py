@@ -370,6 +370,7 @@ def identify_aggregation_and_generate_pandas_query(claude_api_key, query):
         "'aggregate_columns': ['col3'], 'aggregate_functions': ['count', 'sum', 'mean', 'min', 'max'], "
         "'pandas_query': \"df.groupby(['col1', 'col2'])['col3'].agg(['count', 'sum']).reset_index()\"}\n\n"
         "For non-aggregation queries:\n"
+        "You also need to SORT results if needed"
         "{'requires_aggregation': False, 'pandas_query': ''}\n\n"
         "IMPORTANT: When requires_aggregation is False, the pandas_query MUST be an empty string.\n\n"
         "Make sure all quotes are properly escaped for ast.literal_eval() - use single quotes for the outer dictionary "
