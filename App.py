@@ -451,7 +451,7 @@ def generate_aggregation_response(claude_api_key, query, df):
 
 
 
-def agentic_flow(claude_api_key, open_api_key, query, index_name, top_k, final_k, semantic_weight, bm25_weight, enable_hybrid, use_threshold=False, score_threshold=0.4):
+def agentic_flow(es, claude_api_key, open_api_key, query, index_name, top_k, final_k, semantic_weight, bm25_weight, enable_hybrid, use_threshold=False, score_threshold=0.4):
     x = identify_aggregation_and_generate_pandas_query(claude_api_key, query)
     x = ast.literal_eval(x)
     
@@ -532,6 +532,7 @@ def main():
         with st.spinner("Searching across restaurants..."):
             # Call the agentic flow function
             llm_result = agentic_flow(
+                es = es,
                 claude_api_key=claude_api_key,
                 open_api_key=open_api_key,
                 query=query,
