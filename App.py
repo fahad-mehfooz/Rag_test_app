@@ -488,31 +488,33 @@ def agentic_flow(claude_api_key, open_api_key, query, index_name, top_k, final_k
         df = (eval(x["pandas_query"]))
         return generate_aggregation_response(claude_api_key, query, df )
 
+import ast
+import pandas as pd
+import streamlit as st
+from elasticsearch import Elasticsearch
+from anthropic import Anthropic
+import anthropic
+
+# Include all your functions here: retrieve_chunks_hybrid, generate_menu_item_response, 
+# identify_aggregation_and_generate_pandas_query, generate_aggregation_response, agentic_flow
 
 def main():
     open_api_key = st.secrets["open_api_key"]
     elasticsearch_url = st.secrets["elasticsearch_url"]
     es_username = st.secrets["es_username"]
     es_password = st.secrets["es_password"]
-    es_cloud_id = st.secrets["es_cloud_id"]
     claude_api_key = st.secrets["claude_api_key"]
 
-    
-        
-    auth = (es_username, es_password)
-    
+    # Initialize Elasticsearch client
     es = Elasticsearch(
         elasticsearch_url,
         basic_auth=(es_username, es_password),
-        verify_certs=False, 
+        verify_certs=False,
         ssl_show_warn=False,
         request_timeout=60
     )
-    
-    
+
     index_name = "mocktail_index"
-
-
 
     # Sidebar controls
     with st.sidebar:
@@ -521,52 +523,65 @@ def main():
         semantic_weight = st.slider("Semantic Weight", 0.0, 1.0, 0.7)
         bm25_weight = 1.0 - semantic_weight
 
-    st.text(f"Semantic Weight: {semantic_weight:.2f}, BM25 Weight: {bm25_weight:.2f} ")
-    
+    st.text(f"Semantic Weight: {semantic_weight:.2f}, BM25 Weight: {bm25_weight:.2f}")
 
-
+    # User input
     query = st.text_input("Enter your beverage query:", "What are some Sodas?")
 
     if st.button("Search"):
-      with st.spinner("Searching across restaurants..."):
-          llm_result = agentic_flow(claude_api_key, open_api_key, query, index_name, 100, 10, semantic_weight, bm25_weight, True, True, 0.3)
-
-    
-        if not results:
-            st.warning("No results found. Try adjusting your search parameters.")
-            return
-
-        # Display results in an expandable section
-        with st.expander(f"📊 See {len(results)} Search Results", expanded=True):
-            results_df = pd.DataFrame([{
-                "Item": r.get('item', 'N/A'),
-                "Restaurant": r.get('restaurant', 'N/A'),
-                "Description": (r.get('description', 'N/A') + '...') 
-                if len(r.get('description', '')) > 75 
-                else r.get('description', 'N/A'),
-                "Price": r.get('item_price', 'N/A'),
-                "Rating": r.get('rating', 'N/A'),
-                "Address": r.get('display_address', 'N/A'),
-                "Score": f"{r['blended_score']:.2f}",
-                "Match Type": r['primary_match']
-            } for r in results])
-            
-            st.dataframe(
-                results_df,
-                use_container_width=True,
-                column_config={
-                    "Score": st.column_config.ProgressColumn(
-                        format="%.2f",
-                        min_value=0,
-                        max_value=1.0
-                    )
-                }
+        with st.spinner("Searching across restaurants..."):
+            # Call the agentic flow function
+            llm_result = agentic_flow(
+                claude_api_key=claude_api_key,
+                open_api_key=open_api_key,
+                query=query,
+                index_name=index_name,
+                top_k=100,
+                final_k=final_k,
+                semantic_weight=semantic_weight,
+                bm25_weight=bm25_weight,
+                enable_hybrid=True,
+                use_threshold=True,
+                score_threshold=0.3
             )
 
-        
-        st.text(f"Chatbot Output: ")
-        st.text(llm_result)
+
+            # Display results
+            if not llm_result:
+                st.warning("No results found. Try adjusting your search parameters.")
+            else:
+                # Display results in an expandable section
+                with st.expander(f"📊 See {len(results)} Search Results", expanded=True):
+                    results_df = pd.DataFrame([{
+                        "Item": r.get('item', 'N/A'),
+                        "Restaurant": r.get('restaurant', 'N/A'),
+                        "Description": (r.get('description', 'N/A')[:75] + '...') 
+                        if len(r.get('description', '')) > 75 
+                        else r.get('description', 'N/A'),
+                        "Price": r.get('item_price', 'N/A'),
+                        "Rating": r.get('rating', 'N/A'),
+                        "Address": r.get('display_address', 'N/A'),
+                        "Score": f"{r['blended_score']:.2f}",
+                        "Match Type": r['primary_match']
+                    } for r in results])
+
+                    st.dataframe(
+                        results_df,
+                        use_container_width=True,
+                        column_config={
+                            "Score": st.column_config.ProgressColumn(
+                                format="%.2f",
+                                min_value=0,
+                                max_value=1.0
+                            )
+                        }
+                    )
+
+                # Display LLM-generated response
+                st.text("Chatbot Output:")
+                st.write(llm_result)
 
 
 if __name__ == "__main__":
     main()
+  
