@@ -6,15 +6,13 @@ import elasticsearch
 from elasticsearch import Elasticsearch
 import time
 from tabulate import tabulate
-import polars as pl
+import os
+from anthropic import Anthropic
+import anthropic
+import json
 
 def retrieve_chunks_hybrid(es, open_api_key, index_name, query_text, top_k=100, final_k=10,
-                            semantic_weight=0.7, bm25_weight=0.3,
-                            enable_hybrid=True, use_threshold=False, score_threshold=0.5):
-    if not enable_hybrid:
-        semantic_weight = 1.0
-        bm25_weight = 0.0
-        print("Hybrid search disabled. Using semantic search only.")
+                            semantic_weight=0.7, bm25_weight=0.3, enable_hybrid = True):
     
     if semantic_weight + bm25_weight != 1.0:
         total = semantic_weight + bm25_weight
@@ -35,7 +33,6 @@ def retrieve_chunks_hybrid(es, open_api_key, index_name, query_text, top_k=100, 
     semantic_hits = {}
     bm25_hits = {}
 
-    # **Semantic Search**
     semantic_body = {
         "size": top_k * 2,
         "query": {
@@ -153,17 +150,10 @@ def retrieve_chunks_hybrid(es, open_api_key, index_name, query_text, top_k=100, 
 
     sorted_results = sorted(combined_results, key=lambda x: x['blended_score'], reverse=True)
     
-    if use_threshold:
-        filtered_results = [result for result in sorted_results if result['blended_score'] >= score_threshold]
-        print(f"Threshold filtering: Found {len(filtered_results)} results with blended score >= {score_threshold}")
-        selected_results = filtered_results
-    else:
-        selected_results = sorted_results[:final_k]
+    selected_results = sorted_results[:final_k]
     
     output = []
     for i, result in enumerate(selected_results, 1):
-        if not use_threshold and i > final_k:
-            break
             
         source = result['source']
         norm_semantic = result['normalized_semantic']
@@ -182,27 +172,28 @@ def retrieve_chunks_hybrid(es, open_api_key, index_name, query_text, top_k=100, 
             "id": result['id'],  # Document ID
             "doc_id": result['meta'].get('doc_id', result['id']),  
             "restaurant": source.get('Restaurant_Name'),
-            "restaurant_id": source.get('Restaurant_id'),
-            "yelp_url": source.get('Yelp_URL'),
-            "address": source.get('Address'),
-            "city": source.get('City'),
-            "zip": source.get('Zip'),
-            "country": source.get('Country'),
-            "state": source.get('State'),
-            "display_address": source.get('Display_Address'),
-            "image_url": source.get('Image_URL'),
-            "alias": source.get('Alias'),
-            "review_count": source.get('Review_Count'),
-            "price": source.get('Price'),
+            "restaurant_id": source.get('Restaurant_id'),  # Added Restaurant ID
+            "yelp_url": source.get('Yelp_URL'),  # Added Yelp URL
+            "address": source.get('Address'),  # Added Address
+            "city": source.get('City'),  # Added City
+            "zip": source.get('Zip'),  # Added Zip
+            "country": source.get('Country'),  # Added Country
+            "state": source.get('State'),  # Added State
+            "display_address": source.get('Display_Address'),  # Added Display Address
+            "image_url": source.get('Image_URL'),  # Added Image URL
+            "alias": source.get('Alias'),  # Added Alias
+            "review_count": source.get('Review_Count'),  # Added Review Count
+            "price": source.get('Price'),  # Added Price
             "cuisine": source.get('Cuisine_Type'),
             "item": source.get('Item_Name'),
-            "item_price": source.get('Item_Price'),
-            "item_category": source.get('Item_Category'),
+            "item_price": source.get('Item_Price'),  # Added Item Price
+            "item_category": source.get('Item_Category'),  # Added Item Category
+            "item_id": source.get('Item_id'),  
             "description": source.get('Description'),
             "rating": source.get("Rating"),
             "categories": source.get("Categories"),
             "primary_match": "semantic" if weighted_semantic > weighted_bm25 else "bm25",
-            "metadata": {
+            "metadata": {  # Additional metadata section
                 "index": result['meta'].get('index'),
                 "doc_type": result['meta'].get('doc_type'),
                 "doc_id": result['meta'].get('doc_id', result['id'])
@@ -232,92 +223,232 @@ def retrieve_chunks_hybrid(es, open_api_key, index_name, query_text, top_k=100, 
         print("\nSearch Results Table:")
         print(tabulate(table_data, headers=headers, tablefmt="grid", stralign="left"))
         
-        if use_threshold:
-            print(f"\nShowing {len(output)} results with blended score >= {score_threshold}")
-        else:
-            print(f"\nShowing top {len(output)} of {len(sorted_results)} total matches")
+        print(f"\nShowing top {len(output)} of {len(sorted_results)} total matches")
     
     return output
 
 
-def group_and_aggregate(data, groupby_cols, agg_col, agg_func="count", top_n=None, sort_desc=True, filter_conditions=None):
-    """
-    Groups and aggregates a dataset with optional filtering using Polaris instead of Pandas.
+
+
+def generate_menu_item_response(claude_api_key, query, retrieved_chunks):
+    restaurant_entries = []
+    for idx, chunk in enumerate(retrieved_chunks, start=1):
+        entry_lines = []
+        
+        # Restaurant information with numbering
+        entry_lines.append(f"### {idx}. Restaurant: {chunk.get('restaurant', 'Unknown')}")
+        
+        core_details = [
+            ("Restaurant ID", chunk.get('restaurant_id')),
+            ("Address", chunk.get('display_address')),
+            ("City", chunk.get('city')),
+            ("State", chunk.get('state', '').upper() if chunk.get('state') else None),
+            ("Rating", f"{chunk.get('rating')}/5" if chunk.get('rating') else None)
+        ]
+        
+        for label, value in core_details:
+            if value:
+                entry_lines.append(f"- **{label}**: {value}")
+        
+        entry_lines.append(f"### Menu Item: {chunk.get('item', 'N/A')}")
+        
+        item_details = [
+            ("Item Category", chunk.get('item_category')),
+            ("Item Price", chunk.get('item_price', 'Not available')),
+            ("Description", chunk.get('description'))
+        ]
+        
+        for label, value in item_details:
+            if value:
+                entry_lines.append(f"- **{label}**: {value}")
+        
+        additional_details = [
+            ("ZIP Code", chunk.get('zip')),
+            ("Country", chunk.get('country')),
+            ("Yelp URL", chunk.get('yelp_url')),
+            ("Image URL", chunk.get('image_url')),
+            ("Alias", chunk.get('alias')),
+            ("Review Count", chunk.get('review_count')),
+            ("Price Range", chunk.get('price')),
+            ("Cuisine", chunk.get('cuisine')),
+            ("Categories", chunk.get('categories'))
+        ]
+        
+        for label, value in additional_details:
+            if value:
+                entry_lines.append(f"- **{label}**: {value}")
+        
+        restaurant_entries.append("\n".join(entry_lines))
+
+    system_prompt = (
+        "You are a helpful restaurant concierge with expertise in menu items. Your job is to provide accurate, "
+        "concise information about restaurant menu items based on the provided data. "
+        "Follow these guidelines:\n"
+        "1. Answer directly based ONLY on the provided restaurant and menu item information\n"
+        "2. Highlight the most relevant details that match the user's query\n"
+        "3. Organize information in a user-friendly, scannable format\n"
+        "4. Include prices, descriptions, and restaurant location details when available\n"
+        "5. Do not mention the technical aspects of how the information was retrieved\n"
+        "6. If information is missing or limited, acknowledge this fact honestly\n"
+        "7. Do not invent or assume details that are not in the provided data"
+        "8. IMPORTANT: If you feel some menu item does not fit the query, feel free to OMIT it."
     
-    Parameters:
-    - data (list of dicts): Raw input data to convert into DataFrame
-    - groupby_cols (str or list): Column(s) to group by
-    - agg_col (str): Column to perform aggregation on (e.g., "restaurant")
-    - agg_func (str): Aggregation function ("count", "sum", "max", "min", etc.)
-    - top_n (int, optional): If provided, returns only the top N results
-    - sort_desc (bool): Whether to sort in descending order (default: True)
-    - filter_conditions (dict, optional): Conditions to filter numeric columns, e.g., {"rating": (">=", 3)} or price categories
-    
-    Returns:
-    - pl.DataFrame: Processed DataFrame with aggregated values, sorted
-    """
-    # Convert data to Polaris DataFrame
-    df = pl.DataFrame(data)
-    
-    # Extract metadata fields if they exist
-    if "metadata" in df.columns:
-        df = df.with_columns([
-            pl.col("metadata").struct.field("index").alias("metadata_index"),
-            pl.col("metadata").struct.field("doc_id").alias("metadata_doc_id")
-        ])
-    
-    # Apply filters if provided
-    if filter_conditions:
-        for col, condition in filter_conditions.items():
-            if isinstance(condition, tuple):  # For numeric column conditions
-                operator, value = condition
-                if operator == ">=":
-                    df = df.filter(pl.col(col) >= value)
-                elif operator == "<=":
-                    df = df.filter(pl.col(col) <= value)
-                elif operator == ">":
-                    df = df.filter(pl.col(col) > value)
-                elif operator == "<":
-                    df = df.filter(pl.col(col) < value)
-                elif operator == "==":
-                    df = df.filter(pl.col(col) == value)
-                elif operator == "!=":
-                    df = df.filter(pl.col(col) != value)
-    
-    agg_expr = None
-    if agg_func == "count":
-        agg_expr = pl.count(agg_col).alias(f"{agg_func}_{agg_col}")
-    elif agg_func == "sum":
-        agg_expr = pl.sum(agg_col).alias(f"{agg_func}_{agg_col}")
-    elif agg_func == "max":
-        agg_expr = pl.max(agg_col).alias(f"{agg_func}_{agg_col}")
-    elif agg_func == "min":
-        agg_expr = pl.min(agg_col).alias(f"{agg_func}_{agg_col}")
-    elif agg_func == "mean" or agg_func == "avg":
-        agg_expr = pl.mean(agg_col).alias(f"{agg_func}_{agg_col}")
-    else:
-        # For other aggregation functions, use a generic approach
-        agg_expr = pl.col(agg_col).agg(agg_func).alias(f"{agg_func}_{agg_col}")
-    
-    # Convert groupby_cols to list if it's a string
-    if isinstance(groupby_cols, str):
-        groupby_cols = [groupby_cols]
-    
-    # Perform groupby and aggregation
-    sort_col = f"{agg_func}_{agg_col}"
-    grouped_df = (
-        df.group_by(groupby_cols)
-        .agg([agg_expr])
-        .sort(sort_col, descending=sort_desc)
+    )
+
+    separator = "\n\n"
+    prompt = (
+        f"The user asked: \"{query}\"\n\n"
+        "Below is information about relevant menu items at restaurants that match this query:\n\n"
+        f"{separator.join(restaurant_entries)}\n\n"
+        "Based on the information above, provide a helpful response that answers the user's query. "
+        "Focus on the most relevant details, particularly the menu item itself, its price, description, "
+        "and basic information about the restaurant where it's served. "
+        "Format your response to be easy to read and understand. "
+        "Ensure that each restaurant is numbered in the order they appear, like 1. Restaurant A, 2. Restaurant B, etc."
     )
     
-    if top_n is not None:
-        grouped_df = grouped_df.limit(top_n)
+    client = anthropic.Anthropic(api_key=claude_api_key)
+
+    response = client.messages.create(
+        model= "claude-3-haiku-20240307",
+        max_tokens= 800,
+        temperature= 0.3,
+        system=system_prompt,
+        messages=[
+            {"role": "user", "content": prompt}
+        ]
+    )
     
-    return grouped_df
+    return response.content[0].text
+
+def identify_aggregation_and_generate_pandas_query(claude_api_key, query):
+    
+    system_prompt = """
+    You are a specialized SQL and pandas analyzer focusing on identifying aggregation requirements in natural language queries.
+    
+    Your task is to determine whether a given query needs aggregation operations and to generate the appropriate pandas query.
+    
+    Parse the query carefully for indicators like:
+    - Fastest growing, slowest growing, top, least, popular
+    - Words suggesting grouping: "by", "per", "for each", "grouped by"
+    - Aggregation keywords: "total", "average", "count", "sum", "minimum", "maximum"
+    - Time-based grouping: "monthly", "yearly", "quarterly"
+    
+    Respond with a properly formatted Python dictionary literal that can be processed with ast.literal_eval().
+    Do not use JSON formatting with newlines or escaped quotes.
+    
+    IMPORTANT: When requires_aggregation is False, the pandas_query MUST be an empty string.
+    """
+    categorical_columns = [
+        "Quarter", "Year", "restaurant_id", "restaurant", "categories", 
+        "city", "zip", "country", "state", "price", "cuisine", 
+        "item_id", "item_category", "item"
+    ]
+    
+    continuous_columns = [
+        "rating", "review_count", "item_price"
+    ]
+    all_columns = categorical_columns + continuous_columns
+    
+    prompt = (
+        "You are a SQL and pandas specialist. You need to identify if a natural language query requires aggregation "
+        "and generate the appropriate pandas query.\n\n"
+        f"Available columns in the dataset:\n"
+        f"Categorical columns: {categorical_columns}\n"
+        f"Continuous columns: {continuous_columns}\n\n"
+        "Return your response as a Python dictionary literal that can be evaluated with ast.literal_eval().\n"
+        "Use the following format for aggregation queries:\n"
+        "{'requires_aggregation': True, 'group_by_columns': ['col1', 'col2'], "
+        "'aggregate_columns': ['col3'], 'aggregate_functions': ['count', 'sum', 'mean', 'min', 'max'], "
+        "'pandas_query': \"df.groupby(['col1', 'col2'])['col3'].agg(['count', 'sum']).reset_index()\"}\n\n"
+        "For non-aggregation queries:\n"
+        "{'requires_aggregation': False, 'pandas_query': ''}\n\n"
+        "IMPORTANT: When requires_aggregation is False, the pandas_query MUST be an empty string.\n\n"
+        "Make sure all quotes are properly escaped for ast.literal_eval() - use single quotes for the outer dictionary "
+        "and double quotes for the pandas code strings when needed.\n\n"
+        f"Query to analyze: {query}\n"
+    )
+    client = anthropic.Anthropic(api_key=claude_api_key)
+    
+    message = client.messages.create(
+        model="claude-3-7-sonnet-20250219",
+        max_tokens=1024,
+        temperature=0.2,
+        system=system_prompt,
+        messages=[
+            {"role": "user", "content": prompt}
+        ]
+    )
+    
+    try:
+        response_text = message.content[0].text.strip()
+        response_text = response_text.replace('\n', '').replace('```python', '').replace('```', '')
+
+        return response_text
+    except Exception as e:
+        return f"Error processing response: {str(e)}"
 
 
+import anthropic  # Assuming you're using Anthropic's Claude LLM
 
+def generate_aggregation_response(claude_api_key, query, df):
+    """
+    Generates a user-friendly response using an LLM based on a query and a DataFrame containing restaurant and menu item data.
+
+    Args:
+        query (str): The user's query.
+        df (pd.DataFrame): A DataFrame containing restaurant and menu item information.
+        claude_api_key (str): API key for the Anthropic LLM.
+
+    Returns:
+        str: A formatted response generated by the LLM.
+    """
+    # Check if the DataFrame is empty
+    if df.empty:
+        return "No results found for your query."
+
+    # Convert the DataFrame to a string format for the LLM
+    df_str = df.to_string(index=False)
+
+    # System prompt for the LLM
+    system_prompt = (
+        "You are a helpful restaurant concierge with expertise in menu items. Your job is to provide accurate, "
+        "concise information about restaurant menu items based on the provided data. "
+        "Follow these guidelines:\n"
+        "1. Answer directly based ONLY on the provided restaurant and menu item information\n"
+        "2. Highlight the most relevant details that match the user's query\n"
+        "3. Organize information in a user-friendly, scannable format\n"
+        "4. Include prices, descriptions, and restaurant location details when available\n"
+        "5. Do not mention the technical aspects of how the information was retrieved\n"
+        "6. If information is missing or limited, acknowledge this fact honestly\n"
+        "7. Do not invent or assume details that are not in the provided data"
+    )
+
+    # User prompt for the LLM
+    prompt = (
+        f"The user asked: \"{query}\"\n\n"
+        "Below is the data about relevant restaurants and menu items:\n\n"
+        f"{df_str}\n\n"
+        "Based on the information above, provide a helpful response that answers the user's query. "
+        "Focus on the most relevant details, particularly the menu item itself, its price, description, "
+        "and basic information about the restaurant where it's served. "
+        "Format your response to be easy to read and understand."
+    )
+
+    client = anthropic.Anthropic(api_key=claude_api_key)
+
+    # Generate the response using the LLM
+    response = client.messages.create(
+        model="claude-3-haiku-20240307",  # Use the appropriate model
+        max_tokens=800,
+        temperature=0.3,
+        system=system_prompt,
+        messages=[
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    return response.content[0].text
 
 
 def main():
@@ -326,6 +457,8 @@ def main():
     es_username = st.secrets["es_username"]
     es_password = st.secrets["es_password"]
     es_cloud_id = st.secrets["es_cloud_id"]
+    claude_api_key = st.secrets["claude_api_key"]
+
     
         
     auth = (es_username, es_password)
@@ -339,7 +472,8 @@ def main():
     )
     
     
-    index_name = "test_index"
+    index_name = "mocktail_index"
+
 
 
     # Sidebar controls
@@ -348,8 +482,6 @@ def main():
         final_k = st.slider("Number of Results", 1, 250, 10)
         semantic_weight = st.slider("Semantic Weight", 0.0, 1.0, 0.7)
         bm25_weight = 1.0 - semantic_weight
-        use_threshold = st.checkbox("Use Score Threshold")
-        score_threshold = st.slider("Score Threshold", 0.0, 1.0, 0.4) if use_threshold else None
 
     st.text(f"Semantic Weight: {semantic_weight:.2f}, BM25 Weight: {bm25_weight:.2f} ")
     
@@ -364,10 +496,10 @@ def main():
                 query_text=query,
                 final_k=final_k,
                 semantic_weight=semantic_weight,
-                bm25_weight=bm25_weight,
-                use_threshold=use_threshold,
-                score_threshold=score_threshold
+                bm25_weight=bm25_weight
             )
+
+            llm_result = generate_menu_item_response(claude_api_key, query, results)
     
         if not results:
             st.warning("No results found. Try adjusting your search parameters.")
@@ -400,8 +532,10 @@ def main():
                 }
             )
 
+        
+        st.text(f"Chatbot Output: ")
+        st.text(llm_result)
+
+
 if __name__ == "__main__":
     main()
-
-
-
