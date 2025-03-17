@@ -589,6 +589,7 @@ def main():
     st.text(f"Semantic Weight: {semantic_weight:.2f}, BM25 Weight: {bm25_weight:.2f}")
     st.text(f"Score Threshold: 0.3")
     query = st.text_input("Enter your beverage query:", "What are some Sodas?")
+    query = query.lower()
 
     if st.button("Search"):
         with st.spinner("Searching across restaurants..."):
